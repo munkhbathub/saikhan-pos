@@ -1,0 +1,7 @@
+[
+  {"name":"Нарийн махан хуурга","cat":"Хоол","price":12000,"stock":50},
+  {"name":"Гуляш","cat":"Хоол","price":12000,"stock":50},
+  {"name":"Ногоон цай","cat":"Цай","price":5000,"stock":50},
+  {"name":"Cola","cat":"Ундаа","price":4000,"stock":100},
+  {"name":"Pepsi","cat":"Ундаа","price":4000,"stock":100}
+]
