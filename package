@@ -1,0 +1,15 @@
+{
+  "name": "saikhan-pos",
+  "version": "1.0.0",
+  "description": "Saikan POS Cloud Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
