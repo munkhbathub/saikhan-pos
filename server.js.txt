@@ -1,0 +1,28 @@
+const express = require("express");
+const fs = require("fs");
+const app = express();
+app.use(express.json());
+
+const FILE = "./data.json";
+
+if (!fs.existsSync(FILE)) {
+  fs.writeFileSync(FILE, JSON.stringify({ products: [], bills: [] }));
+}
+
+const read = () => JSON.parse(fs.readFileSync(FILE));
+const write = d => fs.writeFileSync(FILE, JSON.stringify(d, null, 2));
+
+app.get("/", (req,res)=>res.send("Saikan POS Cloud OK"));
+
+app.get("/products", (req,res)=>res.json(read().products));
+app.post("/products", (req,res)=>{
+  let d=read(); d.products=req.body; write(d); res.send("OK");
+});
+
+app.get("/bills", (req,res)=>res.json(read().bills));
+app.post("/bills", (req,res)=>{
+  let d=read(); d.bills.push(req.body); write(d); res.send("OK");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, ()=>console.log("Server running"));
