@@ -2,84 +2,161 @@
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<title>Admin</title>
+<title>Saikhan POS – Admin</title>
 <style>
-body{font-family:Arial}
-.card{background:#fff;padding:5px;margin:5px;border-radius:5px;}
-.low{background:#ffcccc}
+body{font-family:Arial;background:#f5f5f5;margin:0}
+header{background:#2c7be5;color:#fff;padding:10px}
+nav button{margin:5px;padding:8px 12px;border:none;border-radius:6px;cursor:pointer}
+.page{display:none;padding:15px}
+.page.active{display:block}
+.card{background:#fff;padding:10px;margin:8px 0;border-radius:6px}
+table{width:100%;border-collapse:collapse}
+th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
+input,select{padding:5px;margin:4px}
 </style>
 </head>
 <body>
-<h2>ADMIN</h2>
 
-<h3>1. Menu нэмэх</h3>
-<input id="name" placeholder="Нэр">
-<input id="price" placeholder="Үнэ">
-<select id="cat">
-<option>Хоол</option>
-<option>Салат</option>
-<option>Цай</option>
-<option>Ундаа</option>
-</select>
-<button onclick="addMenu()">Нэмэх</button>
-<div id="menuView"></div>
+<header>
+  <h2>Saikhan POS – ADMIN</h2>
+  <nav>
+    <button onclick="show('menu')">Menu</button>
+    <button onclick="show('edit')">Засвар</button>
+    <button onclick="show('settlement')">Нэгтгэл</button>
+  </nav>
+</header>
 
-<h3>2. Засвар</h3>
-<div id="editView"></div>
+<!-- MENU ADD -->
+<div id="menu" class="page active">
+  <h3>Menu нэмэх</h3>
+  <div class="card">
+    <input id="mName" placeholder="Нэр">
+    <input id="mPrice" type="number" placeholder="Үнэ">
+    <select id="mCat">
+      <option>Хоол</option>
+      <option>Салат</option>
+      <option>Ус</option>
+      <option>Ундаа</option>
+      <option>Цай</option>
+    </select>
+    <label>
+      <input type="checkbox" id="mStock"> Үлдэгдэлтэй
+    </label>
+    <button onclick="addMenu()">Нэмэх</button>
+  </div>
 
-<h3>3. Нэгтгэл</h3>
-<div id="settleView"></div>
+  <div id="menuList"></div>
+</div>
+
+<!-- EDIT -->
+<div id="edit" class="page">
+  <h3>Menu засвар</h3>
+  <div id="editList"></div>
+</div>
+
+<!-- SETTLEMENT -->
+<div id="settlement" class="page">
+  <h3>Нэгтгэл (нэгтгэл → нэгтгэл)</h3>
+  <button onclick="loadSettlement()">Шинэчлэх</button>
+  <div id="settlementList"></div>
+</div>
 
 <script>
-function fetchMenu(){
-  fetch("/api/menu").then(r=>r.json()).then(d=>{
-    menuView.innerHTML = d.map(i=>`<div class="card">${i.name} | ${i.cat} | ${i.price}₮</div>`).join("");
-    editView.innerHTML = d.map(i=>`
-      <div class="card">
-        ${i.name} | ${i.cat} | ${i.price}₮
-        <button onclick="edit('${i.name}')">Засах</button>
-        <button onclick="del('${i.name}')">Устгах</button>
-      </div>`).join("");
+const pages=document.querySelectorAll('.page');
+function show(id){
+  pages.forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='menu') loadMenu();
+  if(id==='edit') loadEdit();
+}
+
+async function loadMenu(){
+  const res=await fetch('/api/menu');
+  const data=await res.json();
+  let html='';
+  data.forEach(m=>{
+    html+=`<div class="card">${m.name} – ${m.price}₮ (${m.cat})</div>`;
   });
-}
-function addMenu(){
-  fetch("/api/menu",{method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name:name.value,cat:cat.value,price:price.value})
-  }).then(()=>fetchMenu());
+  document.getElementById('menuList').innerHTML=html;
 }
 
-function edit(n){
-  let newName = prompt("Нэр",n);
-  let newPrice = prompt("Үнэ");
-  if(newName && newPrice){
-    fetch("/api/menu/"+n,{method:"PUT",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({name:newName,price:newPrice})
-    }).then(()=>fetchMenu());
-  }
+async function addMenu(){
+  await fetch('/api/menu',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:mName.value,
+      price:Number(mPrice.value),
+      cat:mCat.value,
+      stock:mStock.checked
+    })
+  });
+  mName.value='';mPrice.value='';
+  loadMenu();
 }
 
-function del(n){
-  fetch("/api/menu/"+n,{method:"DELETE"}).then(()=>fetchMenu());
+async function loadEdit(){
+  const res=await fetch('/api/menu');
+  const data=await res.json();
+  let html='<table><tr><th>Нэр</th><th>Үнэ</th><th>Үйлдэл</th></tr>';
+  data.forEach(m=>{
+    html+=`
+    <tr>
+      <td><input value="${m.name}" id="n${m.name}"></td>
+      <td><input type="number" value="${m.price}" id="p${m.name}"></td>
+      <td>
+        <button onclick="updateMenu('${m.name}')">Хадгалах</button>
+        <button onclick="delMenu('${m.name}')">Устгах</button>
+      </td>
+    </tr>`;
+  });
+  html+='</table>';
+  document.getElementById('editList').innerHTML=html;
 }
 
-function fetchSettlement(){
-  fetch("/api/settlements").then(r=>r.json()).then(d=>{
-    settleView.innerHTML = d.map(s=>{
-      let total=0;
-      let html = `<b>${s.date}</b>`;
-      s.orders.forEach(o=>{
-        o.items.forEach(it=> total+=it.price*it.qty);
+async function updateMenu(old){
+  await fetch('/api/menu/'+old,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:document.getElementById('n'+old).value,
+      price:Number(document.getElementById('p'+old).value)
+    })
+  });
+  loadEdit();
+}
+
+async function delMenu(name){
+  if(!confirm('Устгах уу?'))return;
+  await fetch('/api/menu/'+name,{method:'DELETE'});
+  loadEdit();
+}
+
+async function loadSettlement(){
+  const res=await fetch('/api/settlements');
+  const data=await res.json();
+  let html='';
+  data.forEach((s,i)=>{
+    let total=0,items={};
+    s.orders.forEach(o=>{
+      total++;
+      o.items.forEach(it=>{
+        if(!items[it.name]) items[it.name]={qty:0,sum:0};
+        items[it.name].qty+=it.qty;
+        items[it.name].sum+=it.qty*it.price;
       });
-      html+=` - Билл:${s.orders.length} - Нийт:${total}₮<br>`;
-      return html;
-    }).join("");
+    });
+    html+=`<div class="card"><b>Нэгтгэл ${i+1} (${s.date})</b><br>
+    Нийт билл: ${total}<br>`;
+    Object.keys(items).forEach(k=>{
+      html+=`${k} – ${items[k].qty}ш – ${items[k].sum}₮<br>`;
+    });
+    html+='</div>';
   });
+  document.getElementById('settlementList').innerHTML=html;
 }
 
-fetchMenu();
-fetchSettlement();
-setInterval(fetchSettlement,5000);
+loadMenu();
 </script>
 </body>
 </html>
