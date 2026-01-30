@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<title>Admin</title>
+<style>
+body{font-family:Arial}
+.card{background:#fff;padding:5px;margin:5px;border-radius:5px;}
+.low{background:#ffcccc}
+</style>
+</head>
+<body>
+<h2>ADMIN</h2>
+
+<h3>1. Menu нэмэх</h3>
+<input id="name" placeholder="Нэр">
+<input id="price" placeholder="Үнэ">
+<select id="cat">
+<option>Хоол</option>
+<option>Салат</option>
+<option>Цай</option>
+<option>Ундаа</option>
+</select>
+<button onclick="addMenu()">Нэмэх</button>
+<div id="menuView"></div>
+
+<h3>2. Засвар</h3>
+<div id="editView"></div>
+
+<h3>3. Нэгтгэл</h3>
+<div id="settleView"></div>
+
+<script>
+function fetchMenu(){
+  fetch("/api/menu").then(r=>r.json()).then(d=>{
+    menuView.innerHTML = d.map(i=>`<div class="card">${i.name} | ${i.cat} | ${i.price}₮</div>`).join("");
+    editView.innerHTML = d.map(i=>`
+      <div class="card">
+        ${i.name} | ${i.cat} | ${i.price}₮
+        <button onclick="edit('${i.name}')">Засах</button>
+        <button onclick="del('${i.name}')">Устгах</button>
+      </div>`).join("");
+  });
+}
+function addMenu(){
+  fetch("/api/menu",{method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name:name.value,cat:cat.value,price:price.value})
+  }).then(()=>fetchMenu());
+}
+
+function edit(n){
+  let newName = prompt("Нэр",n);
+  let newPrice = prompt("Үнэ");
+  if(newName && newPrice){
+    fetch("/api/menu/"+n,{method:"PUT",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({name:newName,price:newPrice})
+    }).then(()=>fetchMenu());
+  }
+}
+
+function del(n){
+  fetch("/api/menu/"+n,{method:"DELETE"}).then(()=>fetchMenu());
+}
+
+function fetchSettlement(){
+  fetch("/api/settlements").then(r=>r.json()).then(d=>{
+    settleView.innerHTML = d.map(s=>{
+      let total=0;
+      let html = `<b>${s.date}</b>`;
+      s.orders.forEach(o=>{
+        o.items.forEach(it=> total+=it.price*it.qty);
+      });
+      html+=` - Билл:${s.orders.length} - Нийт:${total}₮<br>`;
+      return html;
+    }).join("");
+  });
+}
+
+fetchMenu();
+fetchSettlement();
+setInterval(fetchSettlement,5000);
+</script>
+</body>
+</html>
