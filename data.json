@@ -1,18 +1,17 @@
 {
-  "menu":[
-    {"name":"Амталсан үхрийн махтай будаа","cat":"Хоол","price":17500},
-    {"name":"Салмон шөл","cat":"Хоол","price":22000}
-     {"name":"Бүрж шарсан гахай","cat":"Хоол","price":17000}
-     {"name":"Тахиан махан ","cat":"Хоол","price":18000}
+  "menu": [
+    { "name": "Амталсан үхрийн махтай будаа", "cat": "Хоол", "price": 17500 },
+    { "name": "Салмон шөл", "cat": "Хоол", "price": 22000 },
+    { "name": "Бүрж шарсан гахай", "cat": "Хоол", "price": 17000 },
+    { "name": "Тахиан махан", "cat": "Хоол", "price": 18000 }
   ],
-  "stock":[
-    {"name":"Cola","cat":"Ус","qty":50},
-    {"name":"Pepsi","cat":"Ус","qty":40},
-    {"name":"Ногоон цай","cat":"Цай","qty":30},
-    {"name":"Black Tea","cat":"Цай","qty":25}
+  "stock": [
+    { "name": "Cola", "cat": "Ус", "qty": 50 },
+    { "name": "Pepsi", "cat": "Ус", "qty": 40 },
+    { "name": "Ногоон цай", "cat": "Цай", "qty": 30 },
+    { "name": "Black Tea", "cat": "Цай", "qty": 25 }
   ],
-  "orders":[],
-  "settlements":[],
-  "lastBill":0
+  "orders": [],
+  "settlements": [],
+  "lastBill": 0
 }
-
