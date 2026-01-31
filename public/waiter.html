@@ -4,98 +4,192 @@
 <meta charset="UTF-8">
 <title>Saikhan POS – Waiter</title>
 <style>
-body{font-family:Arial;background:#f5f5f5;margin:0;padding:15px}
-button{padding:6px;margin:2px;border:none;border-radius:6px;cursor:pointer}
-.low{background:#ffcccc}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-td,th{border:1px solid #ddd;padding:6px;text-align:left}
+body{font-family:Arial;margin:0;background:#f5f5f5}
+header{background:#2c7be5;color:#fff;padding:12px}
+header h2{margin:0}
+section{padding:10px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:#fff;padding:8px;border-radius:6px;cursor:pointer;text-align:center}
+.card.low{background:#ffcccc}
+.order-item{display:flex;justify-content:space-between;margin:5px 0}
+input{width:60px;padding:4px;margin-left:5px}
+button{padding:5px 8px;margin-left:5px;border:none;border-radius:4px;cursor:pointer}
 </style>
 </head>
+
 <body>
 
+<header>
 <h2>WAITER</h2>
-<select id="table">
-<option value="">Ширээ сонгоно уу</option>
-<option>0</option><option>1</option><option>2</option>
-<option>3</option><option>4</option><option>5</option>
-<option>6</option><option>7</option><option>8</option><option>9</option>
-<option>VIP-1</option><option>VIP-2</option>
-<option>Carry</option>
-</select>
+<div id="info">Ширээ: -</div>
+</header>
 
-<h3>Menu</h3>
-<div id="menu"></div>
+<section>
+<h3>🪑 Ширээ</h3>
+<div id="tables"></div>
+</section>
 
-<h3>Захиалга</h3>
-<div id="cart"></div>
-<button onclick="send()">Хэвлэх</button>
+<section>
+<h3>📋 Menu</h3>
+<div id="menu" class="grid"></div>
+</section>
 
-<h3>Нэгтгэл</h3>
-<button onclick="loadSet()">Шинэчлэх</button>
-<div id="set"></div>
+<section>
+<h3>📝 Захиалга</h3>
+<div id="order"></div>
+<h3>Нийт: <span id="total">0</span>₮</h3>
+<button onclick="sendOrder()">Хэвлэх</button>
+</section>
+
+<section>
+<h3>📦 Орлого (Ус / Ундаа / Цай)</h3>
+<div id="stock"></div>
+</section>
+
+<section>
+<h3>📊 Нэгтгэл</h3>
+<table>
+<thead>
+<tr><th>Нэр</th><th>Тоо</th><th>Нийт үнэ</th></tr>
+</thead>
+<tbody id="settleBody"></tbody>
+</table>
+</section>
 
 <script>
-let CART=[];
+let menu=[], stock=[];
+let order=[], table=null;
 
+/* ===== LOAD ===== */
 async function load(){
-  const res = await fetch("/api/menu");
-  const menu = await res.json();
-  menu.sort((a,b)=>a.cat.localeCompare(b.cat));
-  menuDiv="";
-  let col=0;
-  menu.forEach(m=>{
-    if(col%4===0) menuDiv+="<br>";
-    menuDiv+=`<button onclick='add("${m.name}",${m.price},"${m.cat}")'>${m.name} ${m.price}₮</button> `;
-    col++;
-  });
-  menu.innerHTML=menuDiv;
-});
-
-async function addMenuItem(){
-  const res = await fetch("/api/menu");
-  return await res.json();
+  menu = await fetch("/api/menu").then(r=>r.json());
+  stock = await fetch("/api/stock").then(r=>r.json());
+  drawTables();
+  drawMenu();
+  drawStock();
+  loadSettlement();
 }
-
-function add(n,p,c){
-  const x=CART.find(i=>i.name===n);
-  if(x) x.qty++; else CART.push({name:n,price:p,qty:1,cat:c});
-  draw();
-}
-
-function addQty(n){ const x=CART.find(i=>i.name===n); if(x)x.qty++; draw();}
-function subQty(n){ const x=CART.find(i=>i.name===n); if(x&&x.qty>1)x.qty--; draw();}
-function draw(){ cart.innerHTML=CART.map(i=>`${i.name} <button onclick='subQty("${i.name}")'>-</button> ${i.qty} <button onclick='addQty("${i.name}")'>+</button>`).join("<br>"); }
-
-async function send(){
-  if(!table.value){alert("Ширээ сонгоно уу"); return;}
-  const r=await fetch("/api/order",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({table:table.value,items:CART})});
-  const d=await r.json();
-  print(CART,table.value,d.bill);
-  CART=[]; draw(); loadSet();
-}
-
-function print(items,table,bill){
-  let t=0;
-  let k=`<h3>ГАЛ ТОГОО</h3>Ширээ:${table}<hr>`;
-  items.filter(i=>i.cat==="food"||i.cat==="salad").forEach(i=>k+=`${i.name} x${i.qty}<br>`);
-  const w1=window.open(""); w1.document.write(k); w1.print(); w1.close();
-
-  let c=`<h3>КАСС</h3>Ширээ:${table}<br>Билл:${bill}<hr>`;
-  items.forEach(i=>{ c+=`${i.name} x${i.qty} = ${i.price*i.qty}₮<br>`; t+=i.price*i.qty; });
-  c+=`<hr>НИЙТ:${t}₮`;
-  const w2=window.open(""); w2.document.write(c); w2.print(); w2.close();
-}
-
-async function loadSet(){
-  const s=await fetch("/api/settlements").then(r=>r.json());
-  set.innerHTML = s.map(set=>{
-    let h=`<b>${set.date}</b><br>`;
-    set.orders.forEach(o=>{ o.items.forEach(i=>h+=`${i.name} x${i.qty} = ${i.price*i.qty}₮<br>`) });
-    return h+"<hr>";
-  }).join("");
-}
-
 load();
+
+/* ===== TABLE ===== */
+function drawTables(){
+  const d=document.getElementById("tables");
+  d.innerHTML="";
+  [...Array(10).keys()].forEach(i=>{
+    const b=document.createElement("button");
+    b.textContent="Ширээ "+i;
+    b.onclick=()=>{table="Ширээ "+i; info();};
+    d.appendChild(b);
+  });
+}
+function info(){document.getElementById("info").textContent="Ширээ: "+table;}
+
+/* ===== MENU ===== */
+function drawMenu(){
+  const d=document.getElementById("menu");
+  d.innerHTML="";
+  menu.forEach(m=>{
+    const s = stock.find(x=>x.name===m.name);
+    const qty = s ? s.qty : "-";
+    const c=document.createElement("div");
+    c.className="card"+(qty!=="-" && qty<10?" low":"");
+    c.innerHTML=`<b>${m.name}</b><br>${m.price}₮<br>Үлд:${qty}`;
+    c.onclick=()=>add(m);
+    d.appendChild(c);
+  });
+}
+
+/* ===== ORDER ===== */
+function add(m){
+  let i=order.find(x=>x.name===m.name);
+  if(i) i.qty++;
+  else order.push({name:m.name,price:m.price,qty:1});
+  drawOrder();
+}
+function drawOrder(){
+  const d=document.getElementById("order");
+  d.innerHTML="";
+  let t=0;
+  order.forEach(i=>{
+    t+=i.price*i.qty;
+    const r=document.createElement("div");
+    r.className="order-item";
+    r.innerHTML=`${i.name} x<input type="number" value="${i.qty}" min="1" onchange="changeQty('${i.name}',this.value)"> = ${i.price*i.qty}₮`;
+    d.appendChild(r);
+  });
+  document.getElementById("total").textContent=t;
+}
+function changeQty(name,val){
+  let i=order.find(x=>x.name===name);
+  if(i) i.qty=Number(val);
+  drawOrder();
+}
+
+/* ===== SEND ===== */
+async function sendOrder(){
+  if(!table){alert("Ширээ сонгоно уу"); return;}
+  await fetch("/api/order",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({table,items:order})
+  });
+  order=[];
+  drawOrder();
+  load();
+  alert("Хэвлэгдлээ");
+}
+
+/* ===== STOCK / ORLOGO ===== */
+function drawStock(){
+  const d=document.getElementById("stock");
+  d.innerHTML="";
+  stock.forEach(s=>{
+    d.innerHTML+=`
+      ${s.name} (Үлд:${s.qty})
+      <input id="q_${s.name}" type="number" min="0">
+      <button onclick="orlogo('${s.name}')">Нэмэх</button><br>
+    `;
+  });
+}
+async function orlogo(n){
+  const q=+document.getElementById("q_"+n).value;
+  if(q<=0) return;
+  await fetch("/api/orlogo",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name:n,qty:q})
+  });
+  document.getElementById("q_"+n).value="";
+  load();
+}
+
+/* ===== SETTLEMENT ===== */
+async function loadSettlement(){
+  const res = await fetch("/api/settlements");
+  const data = await res.json();
+  const map={};
+  data.forEach(s=>{
+    s.orders.forEach(o=>{
+      o.items.forEach(i=>{
+        if(!map[i.name]) map[i.name]={qty:0,sum:0};
+        map[i.name].qty+=i.qty;
+        map[i.name].sum+=i.qty*i.price;
+      });
+    });
+  });
+  const tbody=document.getElementById("settleBody");
+  tbody.innerHTML="";
+  Object.keys(map).forEach(n=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${n}</td>
+        <td>${map[n].qty}</td>
+        <td>${map[n].sum}₮</td>
+      </tr>
+    `;
+  });
+}
 </script>
+
 </body>
 </html>
