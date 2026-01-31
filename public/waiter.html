@@ -12,8 +12,10 @@ section{padding:10px}
 .card{background:#fff;padding:8px;border-radius:6px;cursor:pointer;text-align:center}
 .card.low{background:#ffcccc}
 .order-item{display:flex;justify-content:space-between;margin:5px 0}
-input{width:60px;padding:4px;margin-left:5px}
+input{width:50px;padding:4px;margin-left:5px}
 button{padding:5px 8px;margin-left:5px;border:none;border-radius:4px;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+td,th{border:1px solid #ddd;padding:6px;text-align:left}
 </style>
 </head>
 
@@ -42,11 +44,6 @@ button{padding:5px 8px;margin-left:5px;border:none;border-radius:4px;cursor:poin
 </section>
 
 <section>
-<h3>📦 Орлого (Ус / Ундаа / Цай)</h3>
-<div id="stock"></div>
-</section>
-
-<section>
 <h3>📊 Нэгтгэл</h3>
 <table>
 <thead>
@@ -66,7 +63,6 @@ async function load(){
   stock = await fetch("/api/stock").then(r=>r.json());
   drawTables();
   drawMenu();
-  drawStock();
   loadSettlement();
 }
 load();
@@ -101,6 +97,7 @@ function drawMenu(){
 
 /* ===== ORDER ===== */
 function add(m){
+  if(!table){alert("Ширээ сонгоно уу"); return;}
   let i=order.find(x=>x.name===m.name);
   if(i) i.qty++;
   else order.push({name:m.name,price:m.price,qty:1});
@@ -114,15 +111,10 @@ function drawOrder(){
     t+=i.price*i.qty;
     const r=document.createElement("div");
     r.className="order-item";
-    r.innerHTML=`${i.name} x<input type="number" value="${i.qty}" min="1" onchange="changeQty('${i.name}',this.value)"> = ${i.price*i.qty}₮`;
+    r.innerHTML=`${i.name} x${i.qty} = ${i.price*i.qty}₮`;
     d.appendChild(r);
   });
   document.getElementById("total").textContent=t;
-}
-function changeQty(name,val){
-  let i=order.find(x=>x.name===name);
-  if(i) i.qty=Number(val);
-  drawOrder();
 }
 
 /* ===== SEND ===== */
@@ -137,30 +129,6 @@ async function sendOrder(){
   drawOrder();
   load();
   alert("Хэвлэгдлээ");
-}
-
-/* ===== STOCK / ORLOGO ===== */
-function drawStock(){
-  const d=document.getElementById("stock");
-  d.innerHTML="";
-  stock.forEach(s=>{
-    d.innerHTML+=`
-      ${s.name} (Үлд:${s.qty})
-      <input id="q_${s.name}" type="number" min="0">
-      <button onclick="orlogo('${s.name}')">Нэмэх</button><br>
-    `;
-  });
-}
-async function orlogo(n){
-  const q=+document.getElementById("q_"+n).value;
-  if(q<=0) return;
-  await fetch("/api/orlogo",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name:n,qty:q})
-  });
-  document.getElementById("q_"+n).value="";
-  load();
 }
 
 /* ===== SETTLEMENT ===== */
