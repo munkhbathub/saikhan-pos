@@ -8,28 +8,50 @@
 <h3>➕ Menu нэмэх</h3>
 <input id="n" placeholder="Нэр">
 <input id="p" type="number" placeholder="Үнэ">
+<select id="c">
+  <option value="Хоол">Хоол</option>
+  <option value="Ус">Ус</option>
+  <option value="Ундаа">Ундаа</option>
+  <option value="Цай">Цай</option>
+</select>
+<input id="q" type="number" placeholder="Тоогоо оруулна (ус/цай/ундаа)">
 <button onclick="add()">Нэмэх</button>
 
 <h3>📋 Menu</h3>
 <div id="list"></div>
 
+<h3>🗑 Засвар</h3>
+<div id="edit"></div>
+
 <h3>📊 Нэгтгэл</h3>
 <button onclick="loadSet()">Шинэчлэх</button>
-<pre id="set"></pre>
+<div id="set"></div>
 
 <script>
 async function load(){
   const m=await fetch("/api/menu").then(r=>r.json());
-  list.innerHTML=m.map(x=>`${x.name} - ${x.price}`).join("<br>");
+  const d=await fetch("/api/drinks").then(r=>r.json());
+  list.innerHTML = [...m,...d].map(x=>`${x.name} - ${x.price}₮ (${x.cat})`).join("<br>");
+  edit.innerHTML = [...m,...d].map(x=>`${x.name} <button onclick='del("${x.name}")'>❌</button>`).join("<br>");
 }
 async function add(){
-  await fetch("/api/menu",{method:"POST",headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({name:n.value,cat:"Хоол",price:+p.value})});
+  const body={name:n.value,cat:c.value,price:+p.value};
+  if(c.value!=="Хоол") body.qty=+q.value;
+  await fetch(c.value==="Хоол"?"/api/menu":"/api/drinks",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  load();
+}
+async function del(name){
+  await fetch("/api/menu/"+name,{method:"DELETE"});
+  await fetch("/api/drinks/"+name,{method:"DELETE"});
   load();
 }
 async function loadSet(){
   const s=await fetch("/api/settlements").then(r=>r.json());
-  set.textContent=JSON.stringify(s,null,2);
+  set.innerHTML = s.map(set=>{
+    let h=`<b>${set.date}</b><br>`;
+    set.orders.forEach(o=>{ o.items.forEach(i=>h+=`${i.name} x${i.qty} = ${i.price*i.qty}₮<br>`) });
+    return h+"<hr>";
+  }).join("");
 }
 load();
 </script>
