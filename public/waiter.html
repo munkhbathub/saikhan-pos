@@ -6,19 +6,24 @@
 <h2>WAITER</h2>
 
 <select id="table">
-<option value="">Ширээ</option>
+<option value="">Ширээ сонгоно уу</option>
 <option>0</option><option>1</option><option>2</option>
 <option>3</option><option>4</option><option>5</option>
 <option>6</option><option>7</option><option>8</option><option>9</option>
-<option>VIP-1</option><option>VIP-2</option><option>Carry</option>
+<option>VIP-1</option><option>VIP-2</option>
+<option>Carry</option>
 </select>
 
 <h3>🍽 Menu</h3>
 <div id="menu"></div>
 
-<h3>🧾 Захиалга</h3>
+<h3>🛒 Захиалга</h3>
 <div id="cart"></div>
 <button onclick="send()">Хэвлэх</button>
+
+<h3>📊 Нэгтгэл</h3>
+<button onclick="loadSet()">Шинэчлэх</button>
+<div id="set"></div>
 
 <script>
 let CART=[];
@@ -26,42 +31,44 @@ let CART=[];
 async function load(){
   const m=await fetch("/api/menu").then(r=>r.json());
   const d=await fetch("/api/drinks").then(r=>r.json());
-  menu.innerHTML=[...m,...d].map(x=>
-    `<button onclick='add("${x.name}",${x.price},"${x.cat}")'>
-      ${x.name}
-    </button>`
-  ).join(" ");
+  menu.innerHTML=[...m,...d].map(x=>`<button onclick='add("${x.name}",${x.price},"${x.cat}")'>${x.name}</button>`).join(" ");
 }
-
 function add(n,p,c){
   const x=CART.find(i=>i.name===n);
   x?x.qty++:CART.push({name:n,price:p,qty:1,cat:c});
   draw();
 }
-
-function draw(){
-  cart.innerHTML=CART.map(i=>`${i.name} x${i.qty}`).join("<br>");
-}
+function addQty(n){ const x=CART.find(i=>i.name===n); if(x) x.qty++; draw(); }
+function subQty(n){ const x=CART.find(i=>i.name===n); if(x&&x.qty>1) x.qty--; draw(); }
+function draw(){ cart.innerHTML=CART.map(i=>`${i.name} <button onclick='subQty("${i.name}")'>-</button> ${i.qty} <button onclick='addQty("${i.name}")'>+</button>`).join("<br>"); }
 
 async function send(){
-  const r=await fetch("/api/order",{method:"POST",headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({table:table.value,items:CART})});
+  if(!table.value){alert("Ширээ сонгоно уу"); return;}
+  const r=await fetch("/api/order",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({table:table.value,items:CART})});
   const d=await r.json();
   print(CART,table.value,d.bill);
-  CART=[]; draw();
+  CART=[]; draw(); loadSet();
 }
 
 function print(items,table,bill){
   let t=0;
-  let h=`<h3>КАСС</h3>Ширээ:${table}<br>Билл:${bill}<hr>`;
-  items.forEach(i=>{t+=i.price*i.qty;h+=`${i.name} x${i.qty}<br>`});
-  h+=`<hr>НИЙТ:${t}`;
-  const w=window.open("");w.document.write(h);w.print();w.close();
-
   let k=`<h3>ГАЛ ТОГОО</h3>Ширээ:${table}<hr>`;
-  items.filter(i=>i.cat==="Хоол")
-       .forEach(i=>k+=`${i.name} x${i.qty}<br>`);
-  const w2=window.open("");w2.document.write(k);w2.print();w2.close();
+  items.filter(i=>i.cat==="Хоол").forEach(i=>k+=`${i.name} x${i.qty}<br>`);
+  const w1=window.open(""); w1.document.write(k); w1.print(); w1.close();
+
+  let c=`<h3>КАСС</h3>Ширээ:${table}<br>Билл:${bill}<hr>`;
+  items.forEach(i=>{ c+=`${i.name} x${i.qty} <span style="float:right">${i.price*i.qty}₮</span><br>`; t+=i.price*i.qty; });
+  c+=`<hr>НИЙТ:${t}₮`;
+  const w2=window.open(""); w2.document.write(c); w2.print(); w2.close();
+}
+
+async function loadSet(){
+  const s=await fetch("/api/settlements").then(r=>r.json());
+  set.innerHTML = s.map(set=>{
+    let h=`<b>${set.date}</b><br>`;
+    set.orders.forEach(o=>{ o.items.forEach(i=>h+=`${i.name} x${i.qty} = ${i.price*i.qty}₮<br>`) });
+    return h+"<hr>";
+  }).join("");
 }
 
 load();
