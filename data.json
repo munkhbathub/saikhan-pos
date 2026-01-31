@@ -6,7 +6,8 @@
   "drinks": [
     { "name": "Cola", "cat": "Ус", "price": 3500, "qty": 50 },
     { "name": "Pepsi", "cat": "Ус", "price": 3500, "qty": 40 },
-    { "name": "Япон Ногоон цай", "cat": "Цай", "price": 3000, "qty": 30 }
+    { "name": "Ногоон цай", "cat": "Цай", "price": 3000, "qty": 30 },
+    { "name": "Жимстэй цай", "cat": "Цай", "price": 3500, "qty": 25 }
   ],
   "orders": [],
   "settlements": [],
