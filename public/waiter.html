@@ -10,9 +10,7 @@ section{padding:10px}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .card{background:#fff;padding:8px;border-radius:6px;cursor:pointer;text-align:center}
 .card.low{background:#ffcccc}
-.active{background:#2c7be5;color:#fff}
 .order-item{display:flex;justify-content:space-between;margin:5px 0}
-button{padding:5px 10px}
 </style>
 </head>
 
@@ -20,145 +18,109 @@ button{padding:5px 10px}
 
 <header>
 <h2>WAITER</h2>
-<div id="billInfo">Билл: - | Ширээ: -</div>
+<div id="info">Ширээ: -</div>
 </header>
 
 <section>
-<h3>🪑 Ширээ сонгох</h3>
+<h3>🪑 Ширээ</h3>
 <div id="tables"></div>
 </section>
 
 <section>
-<h3>📋 Menu (хоол)</h3>
+<h3>📋 Menu</h3>
 <div id="menu" class="grid"></div>
-</section>
-
-<section>
-<h3>🥤 Ус / Ундаа / Цай</h3>
-<div id="drinks" class="grid"></div>
 </section>
 
 <section>
 <h3>📝 Захиалга</h3>
 <div id="order"></div>
 <h3>Нийт: <span id="total">0</span>₮</h3>
-<button onclick="sendOrder()">Хэвлэх / Батлах</button>
+<button onclick="sendOrder()">Хэвлэх</button>
 </section>
 
 <section>
-<h3>📦 Орлого (Ус / Ундаа / Цай)</h3>
+<h3>📦 Орлого (ус / ундаа / цай)</h3>
 <div id="stock"></div>
 </section>
 
 <script>
 let menu=[], stock=[];
-let currentTable=null;
 let order=[];
+let table=null;
 
 /* ===== LOAD ===== */
 async function load(){
   menu = await fetch("/api/menu").then(r=>r.json());
   stock = await fetch("/api/stock").then(r=>r.json());
-  drawMenu();
-  drawDrinks();
-  drawStock();
   drawTables();
+  drawMenu();
+  drawStock();
 }
 load();
 
-/* ===== TABLES ===== */
+/* ===== TABLE ===== */
 function drawTables(){
-  const t = document.getElementById("tables");
-  t.innerHTML="";
+  const d=document.getElementById("tables");
+  d.innerHTML="";
   [...Array(10).keys()].forEach(i=>{
     const b=document.createElement("button");
     b.textContent="Ширээ "+i;
-    b.onclick=()=>selectTable("Ширээ "+i);
-    t.appendChild(b);
-  });
-  ["VIP 1","VIP 2","Carry"].forEach(n=>{
-    const b=document.createElement("button");
-    b.textContent=n;
-    b.onclick=()=>selectTable(n);
-    t.appendChild(b);
+    b.onclick=()=>{table="Ширээ "+i;info()};
+    d.appendChild(b);
   });
 }
-function selectTable(t){
-  currentTable=t;
-  document.getElementById("billInfo").textContent="Ширээ: "+t;
+function info(){
+  document.getElementById("info").textContent="Ширээ: "+table;
 }
 
-/* ===== MENU ===== */
+/* ===== MENU (хоол + ус + ундаа + цай) ===== */
 function drawMenu(){
   const d=document.getElementById("menu");
   d.innerHTML="";
-  menu.filter(m=>m.cat==="Хоол").forEach(m=>{
+  menu.forEach(m=>{
+    const s = stock.find(x=>x.name===m.name);
+    const qty = s ? s.qty : "-";
     const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`<b>${m.name}</b><br>${m.price}₮`;
-    c.onclick=()=>addItem(m.name,m.price,false);
-    d.appendChild(c);
-  });
-}
-
-/* ===== DRINKS TO ORDER ===== */
-function drawDrinks(){
-  const d=document.getElementById("drinks");
-  d.innerHTML="";
-  stock.forEach(s=>{
-    const c=document.createElement("div");
-    c.className="card"+(s.qty<10?" low":"");
-    c.innerHTML=`<b>${s.name}</b><br>Үлд: ${s.qty}`;
-    c.onclick=()=>addItem(s.name,0,true);
+    c.className="card"+(qty!== "-" && qty<10?" low":"");
+    c.innerHTML=`<b>${m.name}</b><br>${m.price}₮<br>Үлд:${qty}`;
+    c.onclick=()=>add(m);
     d.appendChild(c);
   });
 }
 
 /* ===== ORDER ===== */
-function addItem(name,price,isStock){
-  let i=order.find(x=>x.name===name);
+function add(m){
+  let i=order.find(x=>x.name===m.name);
   if(i) i.qty++;
-  else order.push({name,price,qty:1,isStock});
+  else order.push({name:m.name,price:m.price,qty:1});
   drawOrder();
 }
 function drawOrder(){
-  const o=document.getElementById("order");
-  o.innerHTML="";
-  let total=0;
+  const d=document.getElementById("order");
+  d.innerHTML="";
+  let t=0;
   order.forEach(i=>{
-    total+=i.price*i.qty;
-    const d=document.createElement("div");
-    d.className="order-item";
-    d.innerHTML=`
-      ${i.name}
-      <span>
-        <button onclick="chg('${i.name}',-1)">➖</button>
-        ${i.qty}
-        <button onclick="chg('${i.name}',1)">➕</button>
-      </span>`;
-    o.appendChild(d);
+    t+=i.price*i.qty;
+    const r=document.createElement("div");
+    r.className="order-item";
+    r.innerHTML=`${i.name} x${i.qty} = ${i.price*i.qty}₮`;
+    d.appendChild(r);
   });
-  document.getElementById("total").textContent=total;
-}
-function chg(n,v){
-  const i=order.find(x=>x.name===n);
-  if(!i) return;
-  i.qty+=v;
-  if(i.qty<=0) order=order.filter(x=>x!==i);
-  drawOrder();
+  document.getElementById("total").textContent=t;
 }
 
-/* ===== SEND ORDER ===== */
+/* ===== SEND ===== */
 async function sendOrder(){
-  if(!currentTable){ alert("Ширээ сонгоно уу"); return; }
+  if(!table){alert("Ширээ сонгоно уу");return;}
   await fetch("/api/order",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({table:currentTable,items:order})
+    body:JSON.stringify({table,items:order})
   });
   order=[];
   drawOrder();
-  alert("Захиалга хэвлэгдлээ");
+  load();
+  alert("Хэвлэгдлээ");
 }
 
 /* ===== STOCK ORLOGO ===== */
@@ -166,25 +128,22 @@ function drawStock(){
   const d=document.getElementById("stock");
   d.innerHTML="";
   stock.forEach(s=>{
-    const div=document.createElement("div");
-    div.innerHTML=`
+    d.innerHTML+=`
       ${s.name} (Үлд:${s.qty})
-      <input type="number" id="q_${s.name}" style="width:60px">
-      <button onclick="addStock('${s.name}','${s.cat}')">Нэмэх</button>
+      <input id="q_${s.name}" type="number" style="width:60px">
+      <button onclick="orlogo('${s.name}')">Нэмэх</button><br>
     `;
-    d.appendChild(div);
   });
 }
-async function addStock(name,cat){
-  const q=document.getElementById("q_"+name).value;
+async function orlogo(n){
+  const q=+document.getElementById("q_"+n).value;
   await fetch("/api/orlogo",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name,cat,qty:Number(q)})
+    body:JSON.stringify({name:n,qty:q})
   });
   load();
 }
 </script>
-
 </body>
 </html>
