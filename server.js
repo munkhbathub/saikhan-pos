@@ -6,94 +6,56 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static("public"));
 
-const DATA_FILE = "./data.json";
+const FILE = "./data.json";
 
-function loadData() {
-  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-}
-
-function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
+const load = () => JSON.parse(fs.readFileSync(FILE));
+const save = d => fs.writeFileSync(FILE, JSON.stringify(d, null, 2));
 
 /* ===== MENU ===== */
-app.get("/api/menu", (req, res) => {
-  res.json(loadData().menu);
+app.get("/api/menu", (r,s)=>s.json(load().menu));
+app.post("/api/menu",(r,s)=>{
+  const d=load(); d.menu.push(r.body); save(d); s.json({ok:true});
 });
 
-app.post("/api/menu", (req, res) => {
-  const data = loadData();
-  data.menu.push(req.body);
-  saveData(data);
-  res.json({ ok: true });
-});
-
-app.put("/api/menu/:name", (req, res) => {
-  const data = loadData();
-  const item = data.menu.find(x => x.name === req.params.name);
-  if(item){
-    item.name = req.body.name;
-    item.price = req.body.price;
-    saveData(data);
-    res.json({ ok:true });
-  } else res.status(404).json({ok:false});
-});
-
-app.delete("/api/menu/:name", (req,res)=>{
-  const data = loadData();
-  data.menu = data.menu.filter(x=>x.name!==req.params.name);
-  saveData(data);
-  res.json({ok:true});
-});
-
-/* ===== STOCK / ORLOGO ===== */
-app.get("/api/stock", (req,res)=>{
-  res.json(loadData().stock);
-});
-
-app.post("/api/orlogo", (req,res)=>{
-  const data = loadData();
-  const item = data.stock.find(x=>x.name===req.body.name);
-  if(item){
-    item.qty += Number(req.body.qty);
-  } else {
-    data.stock.push({name:req.body.name,cat:req.body.cat,qty:Number(req.body.qty)});
-  }
-  saveData(data);
-  res.json({ok:true});
+/* ===== DRINK ===== */
+app.get("/api/drinks",(r,s)=>s.json(load().drinks));
+app.post("/api/drinks",(r,s)=>{
+  const d=load();
+  const x=d.drinks.find(i=>i.name===r.body.name);
+  if(x) x.qty+=Number(r.body.qty);
+  save(d); s.json({ok:true});
 });
 
 /* ===== ORDER ===== */
-app.post("/api/order", (req,res)=>{
-  const data = loadData();
-  if(!req.body.table) return res.status(400).json({error:"Ширээ сонгоно уу"});
-  const billNo = data.lastBill+1;
-  data.lastBill = billNo;
+app.post("/api/order",(r,s)=>{
+  const d=load();
+  const bill=++d.lastBill;
 
-  req.body.items.forEach(i=>{
-    const s = data.stock.find(x=>x.name===i.name);
-    if(s && i.stock) s.qty -= i.qty;
+  r.body.items.forEach(i=>{
+    if(i.cat!=="Хоол"){
+      const x=d.drinks.find(z=>z.name===i.name);
+      if(x) x.qty-=i.qty;
+    }
   });
 
-  data.orders.push({...req.body,billNo});
-  saveData(data);
-  res.json({billNo});
+  d.orders.push({...r.body,bill});
+  save(d);
+  s.json({bill});
 });
 
 /* ===== SETTLEMENT ===== */
-app.post("/api/settlement", (req,res)=>{
-  const data = loadData();
-  data.settlements.push({
-    date: new Date().toISOString().slice(0,10),
-    orders: data.orders
+app.post("/api/settlement",(r,s)=>{
+  const d=load();
+  d.settlements.push({
+    date:new Date().toLocaleString(),
+    orders:d.orders
   });
-  data.orders = [];
-  saveData(data);
-  res.json({ok:true});
+  d.orders=[];
+  d.lastBill=0;
+  save(d);
+  s.json({ok:true});
 });
 
-app.get("/api/settlements", (req,res)=>{
-  res.json(loadData().settlements);
-});
+app.get("/api/settlements",(r,s)=>s.json(load().settlements));
 
 app.listen(PORT,()=>console.log("Saikhan POS running"));
