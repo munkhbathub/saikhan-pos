@@ -2,77 +2,189 @@
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<title>Waiter</title>
+<title>Saikhan POS – Waiter</title>
 <style>
-.low{background:#ffcccc}
+body{font-family:Arial;margin:0;background:#f5f5f5}
+header{background:#2c7be5;color:#fff;padding:10px}
+section{padding:10px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:#fff;padding:8px;border-radius:6px;cursor:pointer;text-align:center}
+.card.low{background:#ffcccc}
+.active{background:#2c7be5;color:#fff}
+.order-item{display:flex;justify-content:space-between;margin:5px 0}
+button{padding:5px 10px}
 </style>
 </head>
+
 <body>
 
-<h2>ЗАХИАЛГА</h2>
-<select id="table">
-<option value="">Ширээ сонго</option>
-<option>1</option><option>2</option><option>3</option>
-<option>VIP</option><option>Carry</option>
-</select>
+<header>
+<h2>WAITER</h2>
+<div id="billInfo">Билл: - | Ширээ: -</div>
+</header>
 
-<div id="menuView"></div>
+<section>
+<h3>🪑 Ширээ сонгох</h3>
+<div id="tables"></div>
+</section>
+
+<section>
+<h3>📋 Menu (хоол)</h3>
+<div id="menu" class="grid"></div>
+</section>
+
+<section>
+<h3>🥤 Ус / Ундаа / Цай</h3>
+<div id="drinks" class="grid"></div>
+</section>
+
+<section>
+<h3>📝 Захиалга</h3>
+<div id="order"></div>
 <h3>Нийт: <span id="total">0</span>₮</h3>
-<button onclick="sendOrder()">Хэвлэх</button>
+<button onclick="sendOrder()">Хэвлэх / Батлах</button>
+</section>
 
-<hr>
-<h3>Орлого нэмэх</h3>
-<select id="stockCat">
-<option>Ус</option><option>Цай</option><option>Ундаа</option>
-</select>
-<input id="stockName" placeholder="Нэр">
-<input type="number" id="stockQty" placeholder="Тоо">
-<button onclick="addStock()">Нэмэх</button>
-
-<hr>
-<button onclick="settle()">НЭГТГЭЛ ХЭВЛЭХ</button>
-<div id="stockView"></div>
+<section>
+<h3>📦 Орлого (Ус / Ундаа / Цай)</h3>
+<div id="stock"></div>
+</section>
 
 <script>
-let cart=[];
-function fetchMenu(){
-  fetch("/api/menu").then(r=>r.json()).then(d=>{
-    menuView.innerHTML=d.map(i=>`<button onclick='add("${i.name}",${i.price},${i.cat})'>${i.name}<br>${i.price}₮</button>`).join("");
+let menu=[], stock=[];
+let currentTable=null;
+let order=[];
+
+/* ===== LOAD ===== */
+async function load(){
+  menu = await fetch("/api/menu").then(r=>r.json());
+  stock = await fetch("/api/stock").then(r=>r.json());
+  drawMenu();
+  drawDrinks();
+  drawStock();
+  drawTables();
+}
+load();
+
+/* ===== TABLES ===== */
+function drawTables(){
+  const t = document.getElementById("tables");
+  t.innerHTML="";
+  [...Array(10).keys()].forEach(i=>{
+    const b=document.createElement("button");
+    b.textContent="Ширээ "+i;
+    b.onclick=()=>selectTable("Ширээ "+i);
+    t.appendChild(b);
+  });
+  ["VIP 1","VIP 2","Carry"].forEach(n=>{
+    const b=document.createElement("button");
+    b.textContent=n;
+    b.onclick=()=>selectTable(n);
+    t.appendChild(b);
   });
 }
-function add(n,p,c){
-  let qty = 1;
-  cart.push({name:n,price:p,qty:qty,stock:c!=="Хоол"&&c!=="Салат"});
-  total.innerText=cart.reduce((s,i)=>s+i.price*i.qty,0);
+function selectTable(t){
+  currentTable=t;
+  document.getElementById("billInfo").textContent="Ширээ: "+t;
 }
 
-function sendOrder(){
-  if(!table.value) return alert("Ширээ сонгоно уу");
-  fetch("/api/order",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({table:table.value,items:cart})
-  }).then(r=>r.json()).then(d=>console.log("Bill:",d.billNo));
-  cart=[]; total.innerText=0;
-  table.value="";
-  fetchStock();
-}
-
-function fetchStock(){
-  fetch("/api/stock").then(r=>r.json()).then(d=>{
-    stockView.innerHTML=d.map(i=>`<div class="${i.qty<10?'low':''}">${i.name} | ${i.qty}</div>`).join("");
+/* ===== MENU ===== */
+function drawMenu(){
+  const d=document.getElementById("menu");
+  d.innerHTML="";
+  menu.filter(m=>m.cat==="Хоол").forEach(m=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`<b>${m.name}</b><br>${m.price}₮`;
+    c.onclick=()=>addItem(m.name,m.price,false);
+    d.appendChild(c);
   });
 }
-fetchMenu();
-fetchStock();
 
-function addStock(){
-  fetch("/api/orlogo",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name:stockName.value,cat:stockCat.value,qty:stockQty.value})
-  }).then(()=>fetchStock());
+/* ===== DRINKS TO ORDER ===== */
+function drawDrinks(){
+  const d=document.getElementById("drinks");
+  d.innerHTML="";
+  stock.forEach(s=>{
+    const c=document.createElement("div");
+    c.className="card"+(s.qty<10?" low":"");
+    c.innerHTML=`<b>${s.name}</b><br>Үлд: ${s.qty}`;
+    c.onclick=()=>addItem(s.name,0,true);
+    d.appendChild(c);
+  });
 }
 
-function settle(){
-  fetch("/api/settlement",{method:"POST"}).then(()=>fetchStock());
+/* ===== ORDER ===== */
+function addItem(name,price,isStock){
+  let i=order.find(x=>x.name===name);
+  if(i) i.qty++;
+  else order.push({name,price,qty:1,isStock});
+  drawOrder();
+}
+function drawOrder(){
+  const o=document.getElementById("order");
+  o.innerHTML="";
+  let total=0;
+  order.forEach(i=>{
+    total+=i.price*i.qty;
+    const d=document.createElement("div");
+    d.className="order-item";
+    d.innerHTML=`
+      ${i.name}
+      <span>
+        <button onclick="chg('${i.name}',-1)">➖</button>
+        ${i.qty}
+        <button onclick="chg('${i.name}',1)">➕</button>
+      </span>`;
+    o.appendChild(d);
+  });
+  document.getElementById("total").textContent=total;
+}
+function chg(n,v){
+  const i=order.find(x=>x.name===n);
+  if(!i) return;
+  i.qty+=v;
+  if(i.qty<=0) order=order.filter(x=>x!==i);
+  drawOrder();
+}
+
+/* ===== SEND ORDER ===== */
+async function sendOrder(){
+  if(!currentTable){ alert("Ширээ сонгоно уу"); return; }
+  await fetch("/api/order",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({table:currentTable,items:order})
+  });
+  order=[];
+  drawOrder();
+  alert("Захиалга хэвлэгдлээ");
+}
+
+/* ===== STOCK ORLOGO ===== */
+function drawStock(){
+  const d=document.getElementById("stock");
+  d.innerHTML="";
+  stock.forEach(s=>{
+    const div=document.createElement("div");
+    div.innerHTML=`
+      ${s.name} (Үлд:${s.qty})
+      <input type="number" id="q_${s.name}" style="width:60px">
+      <button onclick="addStock('${s.name}','${s.cat}')">Нэмэх</button>
+    `;
+    d.appendChild(div);
+  });
+}
+async function addStock(name,cat){
+  const q=document.getElementById("q_"+name).value;
+  await fetch("/api/orlogo",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,cat,qty:Number(q)})
+  });
+  load();
 }
 </script>
+
 </body>
 </html>
