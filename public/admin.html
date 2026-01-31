@@ -39,12 +39,13 @@ td,th{border:1px solid #ddd;padding:6px;text-align:left}
     <option value="tea">Цай</option>
     <option value="water">Ус</option>
   </select>
+  <input id="mQty" type="number" placeholder="Тоогоо оруулна (ус/цай/ундаа)">
   <button onclick="addMenu()">Нэмэх</button>
 </div>
 
 <!-- EDIT -->
 <div id="edit" class="page">
-  <h3>Засвар (Нэр / Үнэ)</h3>
+  <h3>Засвар (Нэр / Үнэ / Тоо)</h3>
   <div id="editList"></div>
 </div>
 
@@ -74,17 +75,12 @@ function showPage(id){
 /* ===== MENU ===== */
 async function addMenu(){
   if(!mName.value || !mPrice.value) return alert("Бүх талбарыг бөглөнө үү");
-  await fetch("/api/menu",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      name:mName.value,
-      price:Number(mPrice.value),
-      cat:mCat.value
-    })
-  });
-  mName.value=""; mPrice.value="";
+  const body={name:mName.value,price:Number(mPrice.value),cat:mCat.value};
+  if(["drink","tea","water"].includes(mCat.value)) body.qty=Number(mQty.value)||0;
+  await fetch("/api/menu",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  mName.value=""; mPrice.value=""; mQty.value="";
   alert("Menu нэмэгдлээ");
+  loadMenu();
 }
 
 async function loadMenu(){
@@ -93,9 +89,10 @@ async function loadMenu(){
   editList.innerHTML="";
   menu.forEach(m=>{
     editList.innerHTML += `
-      <div class="card">
+      <div class="card ${m.qty<10?'low':''}">
         <input value="${m.name}" id="n-${m.name}">
         <input type="number" value="${m.price}" id="p-${m.name}">
+        ${m.qty!==undefined?`<input type="number" value="${m.qty}" id="q-${m.name}">`:""}
         <button onclick="saveMenu('${m.name}')">Хадгалах</button>
         <button onclick="delMenu('${m.name}')">Устгах</button>
       </div>
@@ -106,11 +103,10 @@ async function loadMenu(){
 async function saveMenu(oldName){
   const name=document.getElementById("n-"+oldName).value;
   const price=document.getElementById("p-"+oldName).value;
-  await fetch("/api/menu/"+oldName,{
-    method:"PUT",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name,price:Number(price)})
-  });
+  const qtyEl=document.getElementById("q-"+oldName);
+  const body={name,price:Number(price)};
+  if(qtyEl) body.qty=Number(qtyEl.value);
+  await fetch("/api/menu/"+oldName,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   loadMenu();
 }
 
