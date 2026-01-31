@@ -7,44 +7,51 @@ app.use(express.json());
 app.use(express.static("public"));
 
 const FILE = "./data.json";
-
 const load = () => JSON.parse(fs.readFileSync(FILE));
 const save = d => fs.writeFileSync(FILE, JSON.stringify(d, null, 2));
 
 /* ===== MENU ===== */
-app.get("/api/menu", (r,s)=>s.json(load().menu));
-app.post("/api/menu",(r,s)=>{
-  const d=load(); d.menu.push(r.body); save(d); s.json({ok:true});
+app.get("/api/menu", (req,res)=>res.json(load().menu));
+app.post("/api/menu", (req,res)=>{
+  const d=load();
+  d.menu.push(req.body);
+  save(d);
+  res.json({ok:true});
+});
+app.delete("/api/menu/:name",(req,res)=>{
+  const d=load();
+  d.menu = d.menu.filter(i=>i.name!==req.params.name);
+  save(d); res.json({ok:true});
 });
 
 /* ===== DRINK ===== */
-app.get("/api/drinks",(r,s)=>s.json(load().drinks));
-app.post("/api/drinks",(r,s)=>{
+app.get("/api/drinks",(req,res)=>res.json(load().drinks));
+app.post("/api/drinks",(req,res)=>{
   const d=load();
-  const x=d.drinks.find(i=>i.name===r.body.name);
-  if(x) x.qty+=Number(r.body.qty);
-  save(d); s.json({ok:true});
+  const x=d.drinks.find(i=>i.name===req.body.name);
+  if(x) x.qty += Number(req.body.qty);
+  else d.drinks.push({...req.body,qty:Number(req.body.qty)});
+  save(d); res.json({ok:true});
 });
 
 /* ===== ORDER ===== */
-app.post("/api/order",(r,s)=>{
+app.post("/api/order",(req,res)=>{
   const d=load();
+  if(!req.body.table) return res.status(400).json({error:"Ширээ сонгоно уу"});
   const bill=++d.lastBill;
-
-  r.body.items.forEach(i=>{
+  req.body.items.forEach(i=>{
     if(i.cat!=="Хоол"){
       const x=d.drinks.find(z=>z.name===i.name);
-      if(x) x.qty-=i.qty;
+      if(x) x.qty -= i.qty;
     }
   });
-
-  d.orders.push({...r.body,bill});
+  d.orders.push({...req.body,bill});
   save(d);
-  s.json({bill});
+  res.json({bill});
 });
 
 /* ===== SETTLEMENT ===== */
-app.post("/api/settlement",(r,s)=>{
+app.post("/api/settlement",(req,res)=>{
   const d=load();
   d.settlements.push({
     date:new Date().toLocaleString(),
@@ -53,9 +60,8 @@ app.post("/api/settlement",(r,s)=>{
   d.orders=[];
   d.lastBill=0;
   save(d);
-  s.json({ok:true});
+  res.json({ok:true});
 });
-
-app.get("/api/settlements",(r,s)=>s.json(load().settlements));
+app.get("/api/settlements",(req,res)=>res.json(load().settlements));
 
 app.listen(PORT,()=>console.log("Saikhan POS running"));
