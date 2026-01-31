@@ -1,151 +1,37 @@
 <!DOCTYPE html>
 <html lang="mn">
-<head>
 <meta charset="UTF-8">
-<title>Saikhan POS – Admin</title>
-<style>
-body{font-family:Arial;background:#f5f5f5;margin:0}
-header{background:#2c7be5;color:#fff;padding:12px}
-nav button{margin:5px;padding:8px 12px;border:none;border-radius:6px;cursor:pointer}
-.page{display:none;padding:15px}
-.page.active{display:block}
-.card{background:#fff;padding:10px;margin:6px 0;border-radius:6px}
-input,select{padding:6px;margin:4px}
-.low{background:#ffcccc}
-table{width:100%;border-collapse:collapse}
-td,th{border:1px solid #ddd;padding:6px;text-align:left}
-</style>
-</head>
+<title>Admin</title>
 <body>
+<h2>ADMIN</h2>
 
-<header>
-  <h2>Saikhan POS – Admin</h2>
-  <nav>
-    <button onclick="showPage('menu')">Menu нэмэх</button>
-    <button onclick="showPage('edit')">Засвар</button>
-    <button onclick="showPage('settlement')">Нэгтгэл</button>
-  </nav>
-</header>
+<h3>➕ Menu нэмэх</h3>
+<input id="n" placeholder="Нэр">
+<input id="p" type="number" placeholder="Үнэ">
+<button onclick="add()">Нэмэх</button>
 
-<!-- MENU ADD -->
-<div id="menu" class="page active">
-  <h3>Menu нэмэх</h3>
-  <input id="mName" placeholder="Нэр">
-  <input id="mPrice" type="number" placeholder="Үнэ">
-  <select id="mCat">
-    <option value="food">Хоол</option>
-    <option value="salad">Салат</option>
-    <option value="drink">Ундаа</option>
-    <option value="tea">Цай</option>
-    <option value="water">Ус</option>
-  </select>
-  <button onclick="addMenu()">Нэмэх</button>
-</div>
+<h3>📋 Menu</h3>
+<div id="list"></div>
 
-<!-- EDIT -->
-<div id="edit" class="page">
-  <h3>Засвар (Нэр / Үнэ)</h3>
-  <div id="editList"></div>
-</div>
-
-<!-- SETTLEMENT -->
-<div id="settlement" class="page">
-  <h3>Нэгтгэл</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Нэр</th>
-        <th>Тоо</th>
-        <th>Нийт үнэ</th>
-      </tr>
-    </thead>
-    <tbody id="settleBody"></tbody>
-  </table>
-</div>
+<h3>📊 Нэгтгэл</h3>
+<button onclick="loadSet()">Шинэчлэх</button>
+<pre id="set"></pre>
 
 <script>
-function showPage(id){
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  if(id==="edit") loadMenu();
-  if(id==="settlement") loadSettlement();
+async function load(){
+  const m=await fetch("/api/menu").then(r=>r.json());
+  list.innerHTML=m.map(x=>`${x.name} - ${x.price}`).join("<br>");
 }
-
-/* ===== MENU ===== */
-async function addMenu(){
-  if(!mName.value || !mPrice.value) return alert("Бүх талбарыг бөглөнө үү");
-  await fetch("/api/menu",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      name:mName.value,
-      price:Number(mPrice.value),
-      cat:mCat.value
-    })
-  });
-  mName.value=""; mPrice.value="";
-  alert("Menu нэмэгдлээ");
+async function add(){
+  await fetch("/api/menu",{method:"POST",headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({name:n.value,cat:"Хоол",price:+p.value})});
+  load();
 }
-
-async function loadMenu(){
-  const res = await fetch("/api/menu");
-  const menu = await res.json();
-  editList.innerHTML="";
-  menu.forEach(m=>{
-    editList.innerHTML += `
-      <div class="card">
-        <input value="${m.name}" id="n-${m.name}">
-        <input type="number" value="${m.price}" id="p-${m.name}">
-        <button onclick="saveMenu('${m.name}')">Хадгалах</button>
-        <button onclick="delMenu('${m.name}')">Устгах</button>
-      </div>
-    `;
-  });
+async function loadSet(){
+  const s=await fetch("/api/settlements").then(r=>r.json());
+  set.textContent=JSON.stringify(s,null,2);
 }
-
-async function saveMenu(oldName){
-  const name=document.getElementById("n-"+oldName).value;
-  const price=document.getElementById("p-"+oldName).value;
-  await fetch("/api/menu/"+oldName,{
-    method:"PUT",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name,price:Number(price)})
-  });
-  loadMenu();
-}
-
-async function delMenu(name){
-  if(!confirm("Устгах уу?")) return;
-  await fetch("/api/menu/"+name,{method:"DELETE"});
-  loadMenu();
-}
-
-/* ===== SETTLEMENT ===== */
-async function loadSettlement(){
-  const res = await fetch("/api/settlements");
-  const data = await res.json();
-  const map={};
-  data.forEach(s=>{
-    s.orders.forEach(o=>{
-      o.items.forEach(i=>{
-        if(!map[i.name]) map[i.name]={qty:0,sum:0};
-        map[i.name].qty+=i.qty;
-        map[i.name].sum+=i.qty*i.price;
-      });
-    });
-  });
-  settleBody.innerHTML="";
-  Object.keys(map).forEach(n=>{
-    settleBody.innerHTML+=`
-      <tr>
-        <td>${n}</td>
-        <td>${map[n].qty}</td>
-        <td>${map[n].sum}₮</td>
-      </tr>
-    `;
-  });
-}
+load();
 </script>
-
 </body>
 </html>
