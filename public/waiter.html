@@ -2,73 +2,100 @@
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<title>Saikhan POS – Waiter</title>
+<title>Waiter</title>
 <style>
 body{font-family:Arial;margin:0;background:#f5f5f5}
-header{background:#2c7be5;color:#fff;padding:12px;text-align:center}
-h2{margin:0}
-section{padding:10px}
-button{padding:6px 10px;margin:5px;border:none;border-radius:4px;cursor:pointer}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #ddd;padding:6px;text-align:left}
+header{background:#2c7be5;color:#fff;padding:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:#fff;padding:8px;border-radius:6px;text-align:center}
+.low{background:#ffcccc}
 </style>
 </head>
 <body>
 
 <header>
-<h2>WAITER</h2>
+<h2>Saikhan POS – WAITER</h2>
+<div id="info">Ширээ: - | Bill: -</div>
 </header>
 
-<section>
-<h3>📝 Нэгтгэл хэвлэх</h3>
-<button onclick="printSettlement()">Нэгтгэл хэвлэх</button>
-<div id="settleDiv" style="display:none;">
-  <table>
-    <thead>
-      <tr><th>Нэр</th><th>Тоо</th><th>Нийт үнэ</th></tr>
-    </thead>
-    <tbody id="settleBody"></tbody>
-  </table>
-</div>
-</section>
+<h3>🪑 Ширээ</h3>
+<div id="tables"></div>
+
+<h3>📋 Menu</h3>
+<div id="menu" class="grid"></div>
+
+<h3>📝 Захиалга</h3>
+<div id="order"></div>
+<h3>Нийт: <span id="total">0</span>₮</h3>
+<button onclick="send()">🖨️ Хэвлэх (2 хувь)</button>
+
+<h3>📊 Нэгтгэл хэвлэх</h3>
+<button onclick="settle()">Нэгтгэл хэвлэх</button>
 
 <script>
-async function printSettlement(){
-  // API-с settlements авна
-  const res = await fetch("/api/settlements");
-  const data = await res.json();
+let menu=[],stock=[],order=[],table=null,bill=0;
 
-  const map={};
-  // Өмнөх нэгтгэлээс хойшхи бүх захиалга
-  data.forEach(s=>{
-    s.orders.forEach(o=>{
-      o.items.forEach(i=>{
-        if(!map[i.name]) map[i.name]={qty:0,sum:0};
-        map[i.name].qty+=i.qty;
-        map[i.name].sum+=i.qty*i.price;
-      });
-    });
-  });
+async function load(){
+ menu=await fetch("/api/menu").then(r=>r.json());
+ stock=await fetch("/api/stock").then(r=>r.json());
+ drawTables(); drawMenu();
+}
+load();
 
-  const tbody=document.getElementById("settleBody");
-  tbody.innerHTML="";
-  Object.keys(map).forEach(n=>{
-    tbody.innerHTML+=`
-      <tr>
-        <td>${n}</td>
-        <td>${map[n].qty}</td>
-        <td>${map[n].sum}₮</td>
-      </tr>
-    `;
-  });
+function drawTables(){
+ tables.innerHTML="";
+ ["0","1","2","3","4","5","6","7","8","9","VIP Наад","VIP Цаад","Авч явах"]
+ .forEach(t=>{
+  const b=document.createElement("button");
+  b.textContent=t;
+  b.onclick=()=>{table=t;info.innerText=`Ширээ: ${t} | Bill: ${bill+1}`};
+  tables.appendChild(b);
+ });
+}
 
-  // Харагдаж хэвлэгдэх
-  document.getElementById("settleDiv").style.display="block";
+function drawMenu(){
+ menuDiv=document.getElementById("menu");
+ menuDiv.innerHTML="";
+ menu.forEach(m=>{
+  const s=stock.find(x=>x.name===m.name);
+  const q=s?s.qty:"-";
+  const d=document.createElement("div");
+  d.className="card"+(q!=="-"&&q<10?" low":"");
+  d.innerHTML=`<b>${m.name}</b><br>${m.price}₮<br>Үлд:${q}`;
+  d.onclick=()=>add(m);
+  menuDiv.appendChild(d);
+ });
+}
 
-  // Принтерээр хэвлэх
-  window.print();
+function add(m){
+ if(!table){alert("Ширээ сонгоно уу");return;}
+ const i=order.find(x=>x.name===m.name);
+ i?i.qty++:order.push({name:m.name,price:m.price,qty:1});
+ drawOrder();
+}
+
+function drawOrder(){
+ orderDiv.innerHTML="";
+ let t=0;
+ order.forEach(i=>{
+  t+=i.qty*i.price;
+  orderDiv.innerHTML+=`${i.name} x${i.qty}<br>`;
+ });
+ total.innerText=t;
+}
+
+async function send(){
+ if(!table||order.length==0) return;
+ await fetch("/api/order",{method:"POST",headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({table,items:order,total:+total.innerText})});
+ order=[]; table=null; load();
+ alert("Хэвлэгдлээ");
+}
+
+async function settle(){
+ await fetch("/api/settlement",{method:"POST"});
+ alert("Нэгтгэл хэвлэгдлээ");
 }
 </script>
-
 </body>
 </html>
