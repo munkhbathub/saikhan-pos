@@ -4,11 +4,71 @@
 <meta charset="UTF-8">
 <title>Waiter</title>
 <style>
-body{font-family:Arial;margin:0;background:#f5f5f5}
-header{background:#2c7be5;color:#fff;padding:12px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.card{background:#fff;padding:8px;border-radius:6px;text-align:center}
-.low{background:#ffcccc}
+body{
+  font-family:Arial;
+  margin:0;
+  background:#f5f5f5
+}
+
+header{
+  background:#2c7be5;
+  color:#fff;
+  padding:12px
+}
+
+/* MENU GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px
+}
+
+.card{
+  background:#fff;
+  padding:8px;
+  border-radius:6px;
+  text-align:center;
+  cursor:pointer
+}
+
+.card.low{
+  background:#ffcccc
+}
+
+/* ORDER LIST */
+.order-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#fff;
+  padding:8px;
+  margin:6px 0;
+  border-radius:6px;
+}
+
+.order-row button{
+  padding:2px 6px;
+  margin:0 2px;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+.order-row button:hover{
+  opacity:0.8
+}
+
+/* TABLE BUTTONS */
+button{
+  padding:6px 10px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer
+}
+
+button:active{
+  transform:scale(0.97)
+}
 </style>
 </head>
 <body>
@@ -43,6 +103,7 @@ async function load(){
 load();
 
 function drawTables(){
+ const tables = document.getElementById("tables");
  tables.innerHTML="";
  ["0","1","2","3","4","5","6","7","8","9","VIP Наад","VIP Цаад","Авч явах"]
  .forEach(t=>{
@@ -75,13 +136,41 @@ function add(m){
 }
 
 function drawOrder(){
- orderDiv.innerHTML="";
- let t=0;
- order.forEach(i=>{
-  t+=i.qty*i.price;
-  orderDiv.innerHTML+=`${i.name} x${i.qty}<br>`;
- });
- total.innerText=t;
+  const d=document.getElementById("order");
+  d.innerHTML="";
+  let t=0;
+
+  order.forEach((i,idx)=>{
+    const sum=i.price*i.qty;
+    t+=sum;
+
+    const r=document.createElement("div");
+    r.className="order-row";
+    r.innerHTML=`
+      <div>
+        <b>${i.name}</b><br>
+        ${i.price}₮ × ${i.qty} = <b>${sum}₮</b>
+      </div>
+      <div>
+        <button onclick="chg(${idx},-1)">➖</button>
+        <button onclick="chg(${idx},1)">➕</button>
+        <button onclick="delItem(${idx})">❌</button>
+      </div>
+    `;
+    d.appendChild(r);
+  });
+
+  document.getElementById("total").textContent=t;
+}
+function chg(i,delta){
+  order[i].qty+=delta;
+  if(order[i].qty<=0) order.splice(i,1);
+  drawOrder();
+}
+
+function delItem(i){
+  order.splice(i,1);
+  drawOrder();
 }
 
 async function send(){
