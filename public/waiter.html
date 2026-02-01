@@ -104,15 +104,14 @@ button:active{
 <div id="order"></div>
 <h3>Нийт: <span id="total">0</span>₮</h3>
 <button onclick="sendOrder()">🖨️ Хэвлэх (2 хувь)</button>
-
+  <!-- Хэвлэх хэсэг -->
+<div id="print-kitchen" style="position:absolute; left:-9999px;"></div>
+<div id="print-cash" style="position:absolute; left:-9999px;"></div>
+  
 <h3>📊 Нэгтгэл хэвлэх</h3>
 <button onclick="settle()">Нэгтгэл хэвлэх</button>
-
-<!-- PRINT AREA -->
-<div id="print-kitchen" style="display:none"></div>
-<div id="print-cash" style="display:none"></div>
-
-<script>
+  
+  <script>
 let menu=[], stock=[], order=[], table=null, bill=0;
 
 const info = document.getElementById("info");
@@ -201,35 +200,49 @@ function delItem(i){
 async function sendOrder(){
   if(!table || order.length===0){ alert("Ширээ болон захиалга сонгоно уу"); return; }
 
-  // Kitchen print
-  let kitchenHTML=`<div class="print-area"><h3>🍳 Гал тогоо</h3><p>Ширээ: ${table}</p><hr>`;
-  order.forEach(i=> kitchenHTML += `<p>${i.name} × ${i.qty}</p>`);
-  kitchenHTML += `<hr><p>${new Date().toLocaleString()}</p></div>`;
-  document.getElementById("print-kitchen").innerHTML = kitchenHTML;
-  window.print();
-
-  // Cash print
-  let totalSum=0;
-  let cashHTML=`<div class="print-area"><h3>💰 Касс</h3><p>Ширээ: ${table}</p><hr>`;
+  // ===== Kitchen Print =====
+  let kitchenHTML = `<div class="print-area"><h3>🍳 Гал тогоо</h3><p>Ширээ: ${table}</p><hr>`;
   order.forEach(i=>{
-    const sum=i.price*i.qty;
+    kitchenHTML += `<p>${i.name} × ${i.qty}</p>`;
+  });
+  kitchenHTML += `<hr><p>${new Date().toLocaleString()}</p></div>`;
+  
+  const kDiv = document.getElementById("print-kitchen");
+  kDiv.innerHTML = kitchenHTML;
+  kDiv.style.left = "0"; // visible for print
+  window.print();
+  kDiv.style.left = "-9999px"; // hide again
+
+  // ===== Cash Print =====
+  let totalSum=0;
+  let cashHTML = `<div class="print-area"><h3>💰 Касс</h3><p>Ширээ: ${table}</p><hr>`;
+  order.forEach(i=>{
+    const sum = i.price*i.qty;
     totalSum += sum;
-    cashHTML += `<p>${i.name} ${i.qty} × ${i.price} = ${sum}₮</p>`;
+    cashHTML += `<p>${i.name} ${i.qty} × ${i.price}₮ = ${sum}₮</p>`;
   });
   cashHTML += `<hr><b>Нийт: ${totalSum}₮</b><p>${new Date().toLocaleString()}</p></div>`;
-  document.getElementById("print-cash").innerHTML = cashHTML;
+  
+  const cDiv = document.getElementById("print-cash");
+  cDiv.innerHTML = cashHTML;
+  cDiv.style.left = "0"; // visible
   window.print();
+  cDiv.style.left = "-9999px";
 
-  // Save to server
+  // ===== Save to server =====
   await fetch("/api/order",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({table, items:order, total:totalSum})
   });
 
-  order=[]; table=null;
-  load();
+  order=[];
+  table=null;
+  drawTables();
+  drawMenu();
+  drawOrder();
   alert("2 хувь хэвлэгдлээ");
+
 }
 
 // ===== SETTLEMENT =====
