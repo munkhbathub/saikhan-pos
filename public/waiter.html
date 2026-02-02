@@ -2,7 +2,7 @@
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<title>Waiter</title>
+<title>Saikhan POS – WAITER</title>
 <style>
 body{
   font-family:Arial;
@@ -33,6 +33,15 @@ header{
 
 .card.low{
   background:#ffcccc;
+}
+
+.card.out{
+  background:#e0e0e0;
+  color:#888;
+  cursor:not-allowed;
+}
+.card.out b{
+  text-decoration: line-through;
 }
 
 /* ORDER LIST */
@@ -71,19 +80,9 @@ button:active{
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  .print-area, .print-area * {
-    visibility: visible;
-  }
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    font-size: 14px;
-  }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left:0; top:0; width:100%; font-size:14px; }
 }
 </style>
 </head>
@@ -104,27 +103,23 @@ button:active{
 <div id="order"></div>
 <h3>Нийт: <span id="total">0</span>₮</h3>
 <button onclick="sendOrder()">🖨️ Хэвлэх (2 хувь)</button>
-  <!-- Хэвлэх хэсэг -->
+
+<!-- Хэвлэх хэсэг -->
 <div id="print-kitchen" style="position:absolute; left:-9999px;"></div>
 <div id="print-cash" style="position:absolute; left:-9999px;"></div>
-  
-<h3>📊 Нэгтгэл хэвлэх</h3>
-<button onclick="settle()">Нэгтгэл хэвлэх</button>
-  
-  <script>
-if(localStorage.getItem("role")!=="waiter"){
-  location.href="login.html";
-}
-    
-let menu=[], stock=[], order=[], table=null, bill=0;
 
+<h3>📊 Нэгтгэл хэвлэх</h3>
+<button onclick="settle()">Нэгтгэл хэвлэгдлээ</button>
+
+<script>
+let menu=[], stock=[], order=[], table=null, bill=0;
 const info = document.getElementById("info");
 
 // ===== LOAD DATA =====
 async function load(){
   menu = await fetch("/api/menu").then(r=>r.json());
   stock = await fetch("/api/stock").then(r=>r.json());
-  drawTables(); drawMenu();
+  drawTables(); drawMenu(); drawOrder();
 }
 load();
 
@@ -144,44 +139,43 @@ function drawTables(){
 // ===== MENU =====
 function drawMenu(){
   const menuDiv = document.getElementById("menu");
-  menuDiv.innerHTML = "";
+  menuDiv.innerHTML="";
 
   menu.forEach(m=>{
-    const s = stock.find(x => x.name === m.name);
-    const q = s ? s.qty : 0;
+    const s = stock.find(x=>x.name===m.name);
+    const q = s ? s.qty : "-";
+
+    // Хоол бол үргэлж захиалагдах боломжтой
+    const outOfStock = (["Ус","Ундаа","Цай"].includes(m.cat) && q === 0);
 
     const d = document.createElement("div");
-    d.className = "card" + (q <= 0 ? " low" : "");
+    d.className = "card" + (q !== "-" && q < 10 ? " low" : "");
+    if(outOfStock) d.classList.add("out");
+    d.innerHTML = `<b>${m.name}</b><br>${m.price}₮<br>Үлд:${q}`;
 
-    d.innerHTML = `
-      <b>${m.name}</b><br>
-      ${m.price}₮<br>
-      Үлдэгдэл: ${q}
-    `;
-
-    // ❗ 0 бол дарж болохгүй
-    if(q > 0){
+    if(!outOfStock){
       d.onclick = () => addItem(m);
-    } else {
-      d.style.opacity = "0.4";
-      d.style.pointerEvents = "none";
     }
 
     menuDiv.appendChild(d);
   });
 }
 
-
 // ===== ORDER =====
 function addItem(m){
   if(!table){alert("Ширээ сонгоно уу"); return;}
-  const i=order.find(x=>x.name===m.name);
+  const s = stock.find(x=>x.name===m.name);
+  if(["Ус","Ундаа","Цай"].includes(m.cat) && s && s.qty===0){
+    alert("Үлдэгдэл дууссан тул захиалагдах боломжгүй");
+    return;
+  }
+  const i = order.find(x=>x.name===m.name);
   i ? i.qty++ : order.push({name:m.name, price:m.price, qty:1});
   drawOrder();
 }
 
 function drawOrder(){
-  const d=document.getElementById("order");
+  const d = document.getElementById("order");
   d.innerHTML="";
   let total=0;
 
@@ -189,7 +183,7 @@ function drawOrder(){
     const sum = i.price*i.qty;
     total += sum;
 
-    const r=document.createElement("div");
+    const r = document.createElement("div");
     r.className="order-row";
     r.innerHTML=`
       <div><b>${i.name}</b><br>${i.price}₮ × ${i.qty} = <b>${sum}₮</b></div>
@@ -202,7 +196,7 @@ function drawOrder(){
     d.appendChild(r);
   });
 
-  document.getElementById("total").textContent=total;
+  document.getElementById("total").textContent = total;
 }
 
 function chgQty(i,delta){
@@ -226,15 +220,15 @@ async function sendOrder(){
     kitchenHTML += `<p>${i.name} × ${i.qty}</p>`;
   });
   kitchenHTML += `<hr><p>${new Date().toLocaleString()}</p></div>`;
-  
+
   const kDiv = document.getElementById("print-kitchen");
   kDiv.innerHTML = kitchenHTML;
-  kDiv.style.left = "0"; // visible for print
+  kDiv.style.left = "0";
   window.print();
-  kDiv.style.left = "-9999px"; // hide again
+  kDiv.style.left = "-9999px";
 
   // ===== Cash Print =====
-  let totalSum=0;
+  let totalSum = 0;
   let cashHTML = `<div class="print-area"><h3>💰 Касс</h3><p>Ширээ: ${table}</p><hr>`;
   order.forEach(i=>{
     const sum = i.price*i.qty;
@@ -242,10 +236,10 @@ async function sendOrder(){
     cashHTML += `<p>${i.name} ${i.qty} × ${i.price}₮ = ${sum}₮</p>`;
   });
   cashHTML += `<hr><b>Нийт: ${totalSum}₮</b><p>${new Date().toLocaleString()}</p></div>`;
-  
+
   const cDiv = document.getElementById("print-cash");
   cDiv.innerHTML = cashHTML;
-  cDiv.style.left = "0"; // visible
+  cDiv.style.left = "0";
   window.print();
   cDiv.style.left = "-9999px";
 
@@ -256,13 +250,9 @@ async function sendOrder(){
     body:JSON.stringify({table, items:order, total:totalSum})
   });
 
-  order=[];
-  table=null;
-  drawTables();
-  drawMenu();
-  drawOrder();
+  order=[]; table=null;
+  drawTables(); drawMenu(); drawOrder();
   alert("2 хувь хэвлэгдлээ");
-
 }
 
 // ===== SETTLEMENT =====
