@@ -143,18 +143,34 @@ function drawTables(){
 
 // ===== MENU =====
 function drawMenu(){
-  const menuDiv=document.getElementById("menu");
-  menuDiv.innerHTML="";
+  const menuDiv = document.getElementById("menu");
+  menuDiv.innerHTML = "";
+
   menu.forEach(m=>{
-    const s=stock.find(x=>x.name===m.name);
-    const q = s ? s.qty : "-";
-    const d=document.createElement("div");
-    d.className="card"+(q!=="-"&&q<10?" low":"");
-    d.innerHTML=`<b>${m.name}</b><br>${m.price}₮<br>Үлд:${q}`;
-    d.onclick=()=>addItem(m);
+    const s = stock.find(x => x.name === m.name);
+    const q = s ? s.qty : 0;
+
+    const d = document.createElement("div");
+    d.className = "card" + (q <= 0 ? " low" : "");
+
+    d.innerHTML = `
+      <b>${m.name}</b><br>
+      ${m.price}₮<br>
+      Үлдэгдэл: ${q}
+    `;
+
+    // ❗ 0 бол дарж болохгүй
+    if(q > 0){
+      d.onclick = () => addItem(m);
+    } else {
+      d.style.opacity = "0.4";
+      d.style.pointerEvents = "none";
+    }
+
     menuDiv.appendChild(d);
   });
 }
+
 
 // ===== ORDER =====
 function addItem(m){
