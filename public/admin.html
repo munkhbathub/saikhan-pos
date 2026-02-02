@@ -38,6 +38,10 @@ td,th{border:1px solid #ccc;padding:6px}
 </table>
 
 <script>
+ if(localStorage.getItem("role")!=="admin"){
+  location.href="login.html";
+}
+
 async function add(){
  await fetch("/api/menu",{method:"POST",headers:{"Content-Type":"application/json"},
  body:JSON.stringify({name:n.value,price:+p.value,cat:c.value,qty:+q.value||0})});
