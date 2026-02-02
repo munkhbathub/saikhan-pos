@@ -76,6 +76,15 @@ async function load(){
 }
 async function del(n){await fetch("/api/menu/"+n,{method:"DELETE"});load();}
 load();
+async function saveMenu(){
+  await fetch("/api/menu",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(menu)
+  });
+  alert("Menu серверт хадгалагдлаа");
+}
+
 </script>
 </body>
 </html>
