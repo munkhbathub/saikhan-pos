@@ -4,134 +4,101 @@
 <meta charset="UTF-8">
 <title>Saikhan POS – WAITER</title>
 <style>
-body{
-  font-family:Arial;
-  margin:0;
-  background:#f5f5f5;
+body {
+  font-family: Arial, Tahoma, "DejaVu Sans", sans-serif;
+  margin: 0;
+  background: #f5f5f5;
 }
+header {
+  background: #2c7be5;
+  color: #fff;
+  padding: 12px;
+}
+
+/* MENU GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.card {
+  background: #fff;
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+}
+.card.low {
+  background: #ffcccc;
+}
+.card.out {
+  background: #e0e0e0;
+  color: #888;
+  cursor: not-allowed;
+}
+.card.out b {
+  text-decoration: line-through;
+}
+
+/* ORDER LIST */
+.order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  padding: 8px;
+  margin: 6px 0;
+  border-radius: 6px;
+}
+.order-row button {
+  padding: 2px 6px;
+  margin: 0 2px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.order-row button:hover {
+  opacity: 0.8;
+}
+
+/* TABLE BUTTONS */
+button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:active {
+  transform: scale(0.97);
+}
+
+/* PRINT STYLE */
 @media print {
-  @page {
-    size: 58mm auto;
-    margin: 0;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  .print-area, .print-area * {
-    visibility: visible;
-  }
-
+  @page { size: 58mm auto; margin: 0; }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
   .print-area {
     position: absolute;
     left: 0;
     top: 0;
-    width: 100%;
-    font-family: Arial, Tahoma, sans-serif;
-    font-size: 12px;
+    width: 58mm;
+    font-size: 14px;
     line-height: 1.4;
   }
-
-  .print-area h3 {
-    text-align: center;
-    margin: 4px 0;
-    font-size: 14px;
-  }
-
+  .print-area h3 { text-align: center; margin: 4px 0; }
   .print-area hr {
     border: none;
     border-top: 1px dashed #000;
     margin: 6px 0;
   }
 }
-
-header{
-  background:#2c7be5;
-  color:#fff;
-  padding:12px;
-}
-
-/* MENU GRID */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
-}
-
-.card{
-  background:#fff;
-  padding:8px;
-  border-radius:6px;
-  text-align:center;
-  cursor:pointer;
-}
-
-.card.low{
-  background:#ffcccc;
-}
-
-.card.out{
-  background:#e0e0e0;
-  color:#888;
-  cursor:not-allowed;
-}
-.card.out b{
-  text-decoration: line-through;
-}
-
-/* ORDER LIST */
-.order-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  background:#fff;
-  padding:8px;
-  margin:6px 0;
-  border-radius:6px;
-}
-
-.order-row button{
-  padding:2px 6px;
-  margin:0 2px;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
-}
-
-.order-row button:hover{
-  opacity:0.8;
-}
-
-/* TABLE BUTTONS */
-button{
-  padding:6px 10px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-button:active{
-  transform:scale(0.97);
-}
-
-@media print {
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area { position: absolute; left:0; top:0; width:100%; font-size:14px; }
-}
 </style>
 </head>
 <body>
 
 <header>
-<h2>Saikhan POS – WAITER</h2>
-<div id="info">Ширээ: - | Bill: -</div>
+  <h2>Saikhan POS – WAITER</h2>
+  <div id="info">Ширээ: - | Bill: -</div>
 </header>
 
 <h3>🪑 Ширээ</h3>
@@ -145,12 +112,12 @@ button:active{
 <h3>Нийт: <span id="total">0</span>₮</h3>
 <button onclick="sendOrder()">🖨️ Хэвлэх (2 хувь)</button>
 
-<!-- Хэвлэх хэсэг -->
-<div id="print-kitchen" style="position:absolute; left:-9999px;"></div>
-<div id="print-cash" style="position:absolute; left:-9999px;"></div>
+<!-- PRINT AREAS -->
+<div id="print-kitchen" class="print-area" style="left:-9999px;"></div>
+<div id="print-cash" class="print-area" style="left:-9999px;"></div>
 
 <h3>📊 Нэгтгэл хэвлэх</h3>
-<button onclick="settle()">Нэгтгэл хэвлэгдлээ</button>
+<button onclick="settle()">Нэгтгэл хэвлэх</button>
 
 <script>
 let menu=[], stock=[], order=[], table=null, bill=0;
@@ -168,11 +135,10 @@ load();
 function drawTables(){
   const tables = document.getElementById("tables");
   tables.innerHTML="";
-  ["0","1","2","3","4","5","6","7","8","9","VIP Наад","VIP Цаад","Авч явах"]
-  .forEach(t=>{
-    const b=document.createElement("button");
-    b.textContent=t;
-    b.onclick=()=>{table=t; info.innerText=`Ширээ: ${t} | Bill: ${bill+1}`;};
+  ["0","1","2","3","4","5","6","7","8","9","VIP Наад","VIP Цаад","Авч явах"].forEach(t=>{
+    const b = document.createElement("button");
+    b.textContent = t;
+    b.onclick = ()=>{table=t; info.innerText=`Ширээ: ${t} | Bill: ${bill+1}`;};
     tables.appendChild(b);
   });
 }
@@ -181,23 +147,15 @@ function drawTables(){
 function drawMenu(){
   const menuDiv = document.getElementById("menu");
   menuDiv.innerHTML="";
-
   menu.forEach(m=>{
     const s = stock.find(x=>x.name===m.name);
     const q = s ? s.qty : "-";
-
-    // Хоол бол үргэлж захиалагдах боломжтой
     const outOfStock = (["Ус","Ундаа","Цай"].includes(m.cat) && q === 0);
-
     const d = document.createElement("div");
     d.className = "card" + (q !== "-" && q < 10 ? " low" : "");
     if(outOfStock) d.classList.add("out");
     d.innerHTML = `<b>${m.name}</b><br>${m.price}₮<br>Үлд:${q}`;
-
-    if(!outOfStock){
-      d.onclick = () => addItem(m);
-    }
-
+    if(!outOfStock) d.onclick = ()=>addItem(m);
     menuDiv.appendChild(d);
   });
 }
@@ -219,14 +177,12 @@ function drawOrder(){
   const d = document.getElementById("order");
   d.innerHTML="";
   let total=0;
-
   order.forEach((i,idx)=>{
     const sum = i.price*i.qty;
     total += sum;
-
     const r = document.createElement("div");
     r.className="order-row";
-    r.innerHTML=`
+    r.innerHTML = `
       <div><b>${i.name}</b><br>${i.price}₮ × ${i.qty} = <b>${sum}₮</b></div>
       <div>
         <button onclick="chgQty(${idx},-1)">➖</button>
@@ -236,7 +192,6 @@ function drawOrder(){
     `;
     d.appendChild(r);
   });
-
   document.getElementById("total").textContent = total;
 }
 
@@ -253,47 +208,57 @@ function delItem(i){
 
 // ===== SEND ORDER =====
 async function sendOrder(){
-  if(!table || order.length===0){ alert("Ширээ болон захиалга сонгоно уу"); return; }
+  if(!table || order.length===0){
+    alert("Ширээ болон захиалга сонгоно уу");
+    return;
+  }
+  const now = new Date().toLocaleString();
 
-  // ===== Kitchen Print =====
-  let kitchenHTML = `<div class="print-area"><h3>🍳 Гал тогоо</h3><p>Ширээ: ${table}</p><hr>`;
+  // ===== KITCHEN PRINT =====
+  let kitchenHTML = `<div class="print-area">
+    <h3>🍳 ГАЛ ТОГОО</h3>
+    <p>Ширээ: ${table}</p><hr>`;
   order.forEach(i=>{
     kitchenHTML += `<p>${i.name} × ${i.qty}</p>`;
   });
-  kitchenHTML += `<hr><p>${new Date().toLocaleString()}</p></div>`;
-
+  kitchenHTML += `<hr><p>${now}</p></div>`;
   const kDiv = document.getElementById("print-kitchen");
   kDiv.innerHTML = kitchenHTML;
-  kDiv.style.left = "0";
+  kDiv.style.left="0";
   window.print();
-  kDiv.style.left = "-9999px";
+  kDiv.style.left="-9999px";
 
-  // ===== Cash Print =====
-  let totalSum = 0;
-  let cashHTML = `<div class="print-area"><h3>💰 Касс</h3><p>Ширээ: ${table}</p><hr>`;
-  order.forEach(i=>{
-    const sum = i.price*i.qty;
-    totalSum += sum;
-    cashHTML += `<p>${i.name} ${i.qty} × ${i.price}₮ = ${sum}₮</p>`;
-  });
-  cashHTML += `<hr><b>Нийт: ${totalSum}₮</b><p>${new Date().toLocaleString()}</p></div>`;
+  // ===== CASH PRINT (400ms delay) =====
+  setTimeout(()=>{
+    let totalSum=0;
+    let cashHTML = `<div class="print-area">
+      <h3>💰 КАСС</h3>
+      <p>Ширээ: ${table}</p><hr>`;
+    order.forEach(i=>{
+      const sum = i.price*i.qty;
+      totalSum += sum;
+      cashHTML += `<p>${i.name}<br>${i.qty} × ${i.price}₮ = ${sum}₮</p>`;
+    });
+    cashHTML += `<hr><b>НИЙТ: ${totalSum}₮</b><p>${now}</p></div>`;
+    const cDiv = document.getElementById("print-cash");
+    cDiv.innerHTML = cashHTML;
+    cDiv.style.left="0";
+    window.print();
+    cDiv.style.left="-9999px";
 
-  const cDiv = document.getElementById("print-cash");
-  cDiv.innerHTML = cashHTML;
-  cDiv.style.left = "0";
-  window.print();
-  cDiv.style.left = "-9999px";
+    // ===== SAVE ORDER =====
+    fetch("/api/order",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({table, items:order, total:totalSum, time: now})
+    });
 
-  // ===== Save to server =====
-  await fetch("/api/order",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({table, items:order, total:totalSum})
-  });
-
-  order=[]; table=null;
-  drawTables(); drawMenu(); drawOrder();
-  alert("2 хувь хэвлэгдлээ");
+    order = [];
+    table = null;
+    drawOrder();
+    drawTables();
+    alert("✔ Гал тогоо + Касс хэвлэгдлээ");
+  }, 400);
 }
 
 // ===== SETTLEMENT =====
@@ -302,8 +267,5 @@ async function settle(){
   alert("Нэгтгэл хэвлэгдлээ");
 }
 </script>
-  <div id="print-kitchen" style="position:absolute; left:-9999px;"></div>
-<div id="print-cash" style="position:absolute; left:-9999px;"></div>
-
 </body>
 </html>
