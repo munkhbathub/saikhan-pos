@@ -263,9 +263,37 @@ async function sendOrder(){
 
 // ===== SETTLEMENT =====
 async function settle(){
-  await fetch("/api/settlement",{method:"POST"});
-  alert("Нэгтгэл хэвлэгдлээ");
+  try {
+    const response = await fetch("/api/settlement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if(!response.ok){
+      throw new Error("Серверт нэвтрэхэд алдаа гарлаа");
+    }
+
+    const data = await response.json(); // хэрэв сервер JSON буцаавал
+    // Хэрэв хүснэгт рүү нэмж үзүүлэхийг хүсвэл:
+    const tbody = document.getElementById("settle");
+    if(tbody && data){
+      tbody.innerHTML = ""; // хуучин цэвэрлэх
+      Object.keys(data).forEach(k=>{
+        tbody.innerHTML += `<tr>
+          <td>${k}</td>
+          <td>${data[k].qty}</td>
+          <td>${data[k].sum}₮</td>
+        </tr>`;
+      });
+    }
+
+    alert("Нэгтгэл хэвлэгдлээ");
+  } catch (err) {
+    console.error(err);
+    alert("Нэгтгэл хэвлэхэд алдаа гарлаа: " + err.message);
+  }
 }
+
 </script>
 </body>
 </html>
