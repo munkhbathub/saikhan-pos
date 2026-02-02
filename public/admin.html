@@ -45,46 +45,55 @@ td,th{border:1px solid #ccc;padding:6px}
 <thead><tr><th>Нэр</th><th>Тоо</th><th>Нийт</th></tr></thead>
 <tbody id="settle"></tbody>
 </table>
-
-<script>
-  let menu = JSON.parse(localStorage.getItem("menu")) || [];
-
- if(localStorage.getItem("role")!=="admin"){
+  
+  <script>
+if(localStorage.getItem("role")!=="admin"){
   location.href="login.html";
 }
 
 async function add(){
- await fetch("/api/menu",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({name:n.value,price:+p.value,cat:c.value,qty:+q.value||0})});
- load();
+  await fetch("/api/menu",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      name:n.value,
+      price:+p.value,
+      cat:c.value,
+      qty:+q.value||0
+    })
+  });
+  load();
 }
 
 async function load(){
- const m=await fetch("/api/menu").then(r=>r.json());
- list.innerHTML="";
- m.forEach(x=>{
-  list.innerHTML+=`<div class=card>
-   ${x.name} ${x.price}
-   <button onclick="del('${x.name}')">❌</button>
-  </div>`;
- });
- const s=await fetch("/api/admin-settlement").then(r=>r.json());
- settle.innerHTML="";
- Object.keys(s).forEach(k=>{
-  settle.innerHTML+=`<tr><td>${k}</td><td>${s[k].qty}</td><td>${s[k].sum}</td></tr>`;
- });
-}
-async function del(n){await fetch("/api/menu/"+n,{method:"DELETE"});load();}
-load();
-async function saveMenu(){
-  await fetch("/api/menu",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(menu)
+  const m = await fetch("/api/menu").then(r=>r.json());
+  list.innerHTML="";
+  m.forEach(x=>{
+    list.innerHTML+=`
+      <div class="card ${x.qty===0?'out':''}">
+        <b>${x.name}</b> – ${x.price}₮ (Үлд: ${x.qty})
+        <button onclick="del('${x.name}')">❌</button>
+      </div>`;
   });
-  alert("Menu серверт хадгалагдлаа");
+
+  const s = await fetch("/api/admin-settlement").then(r=>r.json());
+  settle.innerHTML="";
+  Object.keys(s).forEach(k=>{
+    settle.innerHTML+=`
+      <tr>
+        <td>${k}</td>
+        <td>${s[k].qty}</td>
+        <td>${s[k].sum}</td>
+      </tr>`;
+  });
 }
 
+async function del(name){
+  await fetch("/api/menu/"+name,{method:"DELETE"});
+  load();
+}
+
+load();
 </script>
 </body>
 </html>
