@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<title>Saikhan POS – Login</title>
+<style>
+body{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background:#2c7be5;
+  font-family:Arial;
+}
+.box{
+  background:#fff;
+  padding:20px;
+  border-radius:8px;
+  width:260px;
+}
+input,button{
+  width:100%;
+  padding:8px;
+  margin:6px 0;
+}
+button{
+  background:#2c7be5;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h3>🔐 POS Нэвтрэх</h3>
+  <input id="user" placeholder="Нэвтрэх нэр">
+  <input id="pass" type="password" placeholder="Нууц үг">
+  <button onclick="login()">Нэвтрэх</button>
+</div>
+
+<script>
+function login(){
+  const u = user.value;
+  const p = pass.value;
+
+  if(u==="admin" && p==="1234"){
+    localStorage.setItem("role","admin");
+    location.href="admin.html";
+  }
+  else if(u==="waiter" && p==="1234"){
+    localStorage.setItem("role","waiter");
+    location.href="waiter.html";
+  }
+  else{
+    alert("Нэвтрэх нэр эсвэл нууц үг буруу");
+  }
+}
+</script>
+
+</body>
+</html>
