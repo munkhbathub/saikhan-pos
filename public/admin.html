@@ -47,6 +47,8 @@ td,th{border:1px solid #ccc;padding:6px}
 </table>
 
 <script>
+  let menu = JSON.parse(localStorage.getItem("menu")) || [];
+
  if(localStorage.getItem("role")!=="admin"){
   location.href="login.html";
 }
