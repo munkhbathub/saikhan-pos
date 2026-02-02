@@ -112,6 +112,10 @@ button:active{
 <button onclick="settle()">Нэгтгэл хэвлэх</button>
   
   <script>
+if(localStorage.getItem("role")!=="waiter"){
+  location.href="login.html";
+}
+    
 let menu=[], stock=[], order=[], table=null, bill=0;
 
 const info = document.getElementById("info");
