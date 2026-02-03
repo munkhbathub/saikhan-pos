@@ -263,35 +263,39 @@ async function sendOrder(){
 
 // ===== SETTLEMENT =====
 async function settle(){
+  let data;
   try {
-    const response = await fetch("/api/settlement", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
-
-    if(!response.ok){
-      throw new Error("Серверт нэвтрэхэд алдаа гарлаа");
-    }
-
-    const data = await response.json(); // хэрэв сервер JSON буцаавал
-    // Хэрэв хүснэгт рүү нэмж үзүүлэхийг хүсвэл:
-    const tbody = document.getElementById("settle");
-    if(tbody && data){
-      tbody.innerHTML = ""; // хуучин цэвэрлэх
-      Object.keys(data).forEach(k=>{
-        tbody.innerHTML += `<tr>
-          <td>${k}</td>
-          <td>${data[k].qty}</td>
-          <td>${data[k].sum}₮</td>
-        </tr>`;
-      });
-    }
-
-    alert("Нэгтгэл хэвлэгдлээ");
-  } catch (err) {
-    console.error(err);
-    alert("Нэгтгэл хэвлэхэд алдаа гарлаа: " + err.message);
+    const res = await fetch("/api/settlement");
+    data = await res.json();
+  } catch(e){
+    alert("Нэгтгэлийг ачаалах боломжгүй боллоо");
+    return;
   }
+
+  if(Object.keys(data).length === 0){
+    alert("Захиалга байхгүй байна");
+    return;
+  }
+
+  let html = `<div class="print-area"><h3>📊 НЭГТГЭЛ</h3><hr>`;
+  let total = 0;
+
+  Object.keys(data).forEach(k=>{
+    html += `<p><b>${k}</b>: ${data[k].qty} ширхэг = ${data[k].sum}₮</p>`;
+    total += data[k].sum;
+  });
+
+  html += `<hr><b>НИЙТ: ${total}₮</b></div>`;
+
+  const p = document.getElementById("print-cash");
+  p.innerHTML = html;
+  p.style.left = "0";
+
+  setTimeout(()=>{
+    window.print();
+    p.style.left = "-9999px";
+  }, 100);
+
 }
 
 </script>
