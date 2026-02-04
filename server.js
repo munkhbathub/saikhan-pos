@@ -1,3 +1,7 @@
+const path = require("path");
+
+const SETTLEMENT_FILE = path.join(__dirname, "settlements.json");
+
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -75,38 +79,58 @@ app.post("/api/order",(req,res)=>{
 
 // ===== SETTLEMENT =====
 app.post("/api/settlement",(req,res)=>{
-  const data = readJSON(DATA_FILE);
-  const settlements = readJSON(SETTLEMENT_FILE);
+  const d = load();
+  if(d.orders.length === 0){
+    return res.json({});
+  }
 
-  // Өнөөдрийн нэгтгэл
-  const today = new Date().toISOString().split("T")[0];
-  let todaySettlement = {};
+  // ===== Нэгтгэл тооцоолох =====
+  const map = {};
+  let total = 0;
 
-  (data.orders || []).forEach(o=>{
+  d.orders.forEach(o=>{
     o.items.forEach(i=>{
-      if(!todaySettlement[i.name]) todaySettlement[i.name] = {qty:0,sum:0};
-      todaySettlement[i.name].qty += i.qty;
-      todaySettlement[i.name].sum += i.qty*i.price;
+      if(!map[i.name]){
+        map[i.name] = { qty:0, sum:0 };
+      }
+      map[i.name].qty += i.qty;
+      map[i.name].sum += i.qty * i.price;
+      total += i.qty * i.price;
     });
   });
 
-  // 32 өдрийн хадгалах: хуучин 32-ийг хасна
-  settlements.push({date: today, data: todaySettlement});
-  if(settlements.length>32) settlements.shift();
+  const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
 
-  writeJSON(SETTLEMENT_FILE, settlements);
+  // ===== settlements.json унших =====
+  let settlements = [];
+  if(fs.existsSync(SETTLEMENT_FILE)){
+    settlements = JSON.parse(fs.readFileSync(SETTLEMENT_FILE,"utf8"));
+  }
 
-  // orders цэвэрлэх
-  data.orders = [];
-  writeJSON(DATA_FILE, data);
+  // ===== Шинэ өдөр нэмэх =====
+  settlements.push({
+    date: today,
+    items: map,
+    total: total
+  });
 
-  res.json({ok:true, today:todaySettlement});
+  // ===== 32 хоногоос их бол хуучныг устгах =====
+  if(settlements.length > 32){
+    settlements = settlements.slice(settlements.length - 32);
+  }
+
+  fs.writeFileSync(
+    SETTLEMENT_FILE,
+    JSON.stringify(settlements,null,2)
+  );
+
+  // ===== Orders цэвэрлэх =====
+  d.orders = [];
+  save(d);
+
+  res.json(map); // waiter-д хэвлэхэд буцаана
 });
 
-app.get("/api/settlements",(req,res)=>{
-  const settlements = readJSON(SETTLEMENT_FILE);
-  res.json(settlements);
-});
 
 // ===== EXPORT EXCEL =====
 const XLSX = require("xlsx");
@@ -131,3 +155,4 @@ app.get("/api/settlements/excel",(req,res)=>{
 });
 
 app.listen(PORT,()=>console.log("Saikhan POS running on port",PORT));
+
