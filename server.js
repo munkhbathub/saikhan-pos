@@ -1,3 +1,5 @@
+const XLSX = require("xlsx");
+
 const path = require("path");
 
 const SETTLEMENT_FILE = path.join(__dirname, "settlements.json");
@@ -155,4 +157,39 @@ app.get("/api/settlements/excel",(req,res)=>{
 });
 
 app.listen(PORT,()=>console.log("Saikhan POS running on port",PORT));
+
+app.get("/api/settlements/excel",(req,res)=>{
+  if(!fs.existsSync(SETTLEMENT_FILE)){
+    return res.status(404).send("No settlements");
+  }
+
+  const settlements = JSON.parse(
+    fs.readFileSync(SETTLEMENT_FILE,"utf8")
+  );
+
+  const rows = [];
+
+  settlements.forEach(day=>{
+    Object.keys(day.items).forEach(name=>{
+      rows.push({
+        Огноо: day.date,
+        Бүтээгдэхүүн: name,
+        Тоо: day.items[name].qty,
+        Дүн: day.items[name].sum
+      });
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  XLSX.utils.book_append_sheet(wb, ws, "32 хоног");
+
+  const filePath = path.join(__dirname,"settlements.xlsx");
+  XLSX.writeFile(wb, filePath);
+
+  res.download(filePath,"Saikhan_POS_32_хоног.xlsx");
+});
+
+
 
