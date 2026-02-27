@@ -141,7 +141,7 @@ async function sendOrder(){
   ">
     <center>
       <b>SAIKHAN LOUNGE</b><br>
-      Ulaanbaatar<br>
+      DZ<br>
       ------------------------------
     </center>
 
