@@ -92,21 +92,75 @@ function delItem(i){
 
 // ===== SEND ORDER =====
 async function sendOrder(){
-  if(!table || order.length===0){ alert("Ширээ болон захиалга сонгоно уу"); return; }
-  const now = new Date().toISOString();
-  let totalSum=0;
-  order.forEach(i=> totalSum += i.qty*i.price );
+  if(!table || order.length===0){
+    alert("Ширээ болон захиалга сонгоно уу");
+    return;
+  }
 
-  // Хадгалах
+  const now = new Date();
+  let totalSum = 0;
+  order.forEach(i => totalSum += i.qty * i.price);
+
+  // ======================
+  // 1️⃣ SERVER-Д ХАДГАЛАХ
+  // ======================
   await fetch("/api/order",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ table, items:order, total:totalSum, time:now })
+    body: JSON.stringify({
+      table,
+      items:order,
+      total:totalSum,
+      time: now.toISOString()
+    })
   });
 
+  // ======================
+  // 2️⃣ PRINT ХЭСЭГ
+  // ======================
+  let html = `
+    <div class="print-area">
+      <h3>Saikhan Lounge</h3>
+      <p>Ширээ: ${table}</p>
+      <p>${now.toLocaleString()}</p>
+      <hr>
+  `;
+
+  order.forEach(i=>{
+    html += `
+      <p>
+        ${i.name}<br>
+        ${i.qty} x ${i.price}₮ = ${i.qty*i.price}₮
+      </p>
+    `;
+  });
+
+  html += `
+      <hr>
+      <b>НИЙТ: ${totalSum}₮</b>
+      <hr>
+      <p style="text-align:center">Баярлалаа</p>
+    </div>
+  `;
+
+  const printArea = document.getElementById("print-cash");
+  printArea.innerHTML = html;
+  printArea.style.left = "0";
+
+  setTimeout(()=>{
+    window.print();
+    printArea.style.left = "-9999px";
+  },100);
+
+  // ======================
+  // 3️⃣ RESET
+  // ======================
+  order=[];
+  table=null;
+  drawOrder();
+  drawTables();
+
   alert("✔ Захиалга хадгалагдлаа");
-  order=[]; table=null;
-  drawOrder(); drawTables();
 }
 
 // ===== SETTLEMENT (ӨДРИЙН НЭГТГЭЛ ХЭВЛЭХ) =====
