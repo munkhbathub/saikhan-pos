@@ -35,13 +35,29 @@ app.get("/api/stock",(req,res)=>{
 });
 
 // ===== SAVE ORDER =====
+// ===== SAVE ORDER + STOCK UPDATE =====
 app.post("/api/order",(req,res)=>{
   const orders = readJSON(ORDERS_FILE);
-  orders.push(req.body);
+  const stock = readJSON(STOCK_FILE);
+
+  const newOrder = req.body;
+
+  // 📦 STOCK ХАСАХ
+  newOrder.items.forEach(item=>{
+    const s = stock.find(x=>x.name === item.name);
+    if(s){
+      s.qty -= item.qty;
+      if(s.qty < 0) s.qty = 0;
+    }
+  });
+
+  // хадгалах
+  orders.push(newOrder);
   writeJSON(ORDERS_FILE,orders);
+  writeJSON(STOCK_FILE,stock);
+
   res.json({ok:true});
 });
-
 // ===== SETTLEMENT =====
 app.post("/api/settlement",(req,res)=>{
   const orders = readJSON(ORDERS_FILE);
@@ -76,3 +92,4 @@ app.post("/api/settlement",(req,res)=>{
 app.listen(PORT,()=>{
   console.log("Saikhan POS running on http://localhost:"+PORT);
 });
+
