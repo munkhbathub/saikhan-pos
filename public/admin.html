@@ -91,7 +91,37 @@ td,th{border:1px solid #ccc;padding:6px}
 if(localStorage.getItem("role")!=="admin"){
   location.href="login.html";
 }
+  
+<div id="loginBox">
+  <h3>🔐 Admin Login</h3>
+  <input id="user" placeholder="Username"><br><br>
+  <input id="pass" type="password" placeholder="Password"><br><br>
+  <button onclick="login()">Login</button>
+</div>
 
+<div id="adminPanel" style="display:none;">
+  <!-- Бүх admin content энд байна -->
+</div>
+
+<script>
+async function login(){
+  const username=document.getElementById("user").value;
+  const password=document.getElementById("pass").value;
+
+  const res = await fetch("/api/admin/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username,password})
+  }).then(r=>r.json());
+
+  if(res.ok){
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("adminPanel").style.display="block";
+  } else {
+    alert("Нэвтрэх мэдээлэл буруу");
+  }
+</script>
+    
 async function add(){
   await fetch("/api/menu",{
     method:"POST",
@@ -135,7 +165,8 @@ async function loadStock(){
     </option>`;
   });
 }
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<canvas id="salesChart"></canvas>
 async function addStock(){
   const name = document.getElementById("stockName").value;
   const qty = document.getElementById("stockQty").value;
@@ -150,6 +181,39 @@ async function addStock(){
   loadStock();
 }
 
+async function loadChart(){
+  const data = await fetch("/api/admin/chart").then(r=>r.json());
+
+  const labels = Object.keys(data);
+  const values = Object.values(data);
+
+  new Chart(document.getElementById("salesChart"),{
+    type:"bar",
+    data:{
+      labels:labels,
+      datasets:[{
+        label:"Борлуулалт ₮",
+        data:values
+      }]
+    }
+  });
+}
+
+loadChart();
+
+<h3>📅 Тайлан</h3>
+<div id="reportBox"></div>
+
+<script>
+async function loadReport(){
+  const r = await fetch("/api/admin/report").then(r=>r.json());
+  document.getElementById("reportBox").innerHTML=
+    `7 хоног: ${r.week}₮ <br>
+     Сар: ${r.month}₮`;
+}
+loadReport();
+</script>
+  
 async function loadToday(){
   const d = await fetch("/api/admin/today").then(r=>r.json());
   document.getElementById("todaySales").innerHTML =
@@ -181,6 +245,9 @@ load();
 </script>
   <div id="print-kitchen" style="position:absolute; left:-9999px;"></div>
 <div id="print-cash" style="position:absolute; left:-9999px;"></div>
-
+<br><br>
+<a href="/api/admin/export">
+  <button>🧾 Excel татах</button>
+</a>
 </body>
 </html>
