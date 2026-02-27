@@ -12,6 +12,19 @@ const STOCK_FILE = "stock.json";
 const ORDERS_FILE = "orders.json";
 const SETTLE_FILE = "settlements.json";
 
+// ===== SIMPLE ADMIN LOGIN =====
+const ADMIN_USER = "adminbill";
+const ADMIN_PASS = "saikhan1234";
+
+app.post("/api/admin/login",(req,res)=>{
+  const {username,password} = req.body;
+  if(username===ADMIN_USER && password===ADMIN_PASS){
+    res.json({ok:true});
+  } else {
+    res.json({ok:false});
+  }
+});
+
 // ===== READ JSON =====
 function readJSON(path){
   if(!fs.existsSync(path)) fs.writeFileSync(path,"[]");
@@ -124,6 +137,7 @@ app.post("/api/settlement",(req,res)=>{
 app.listen(PORT,()=>{
   console.log("Saikhan POS running on http://localhost:"+PORT);
 });
+
 
 
 
