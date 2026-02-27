@@ -17,7 +17,17 @@ function readJSON(path){
   if(!fs.existsSync(path)) fs.writeFileSync(path,"[]");
   return JSON.parse(fs.readFileSync(path));
 }
+app.get("/api/admin/today",(req,res)=>{
+  const orders = readJSON(ORDERS_FILE);
 
+  let total = 0;
+  orders.forEach(o=> total += o.total);
+
+  res.json({
+    count: orders.length,
+    total: total
+  });
+});
 // ===== WRITE JSON =====
 function writeJSON(path,data){
   fs.writeFileSync(path, JSON.stringify(data,null,2));
@@ -61,6 +71,25 @@ app.post("/api/order",(req,res)=>{
 
   res.json({ok:true});
 });
+// GET STOCK
+app.get("/api/admin/stock",(req,res)=>{
+  res.json(readJSON(STOCK_FILE));
+});
+
+// UPDATE STOCK
+app.post("/api/admin/stock",(req,res)=>{
+  const stock = readJSON(STOCK_FILE);
+  const {name, qty} = req.body;
+
+  const s = stock.find(x=>x.name===name);
+  if(s){
+    s.qty += Number(qty);
+  }
+
+  writeJSON(STOCK_FILE,stock);
+  res.json({ok:true});
+});
+
 // ===== SETTLEMENT =====
 app.post("/api/settlement",(req,res)=>{
   const orders = readJSON(ORDERS_FILE);
@@ -95,5 +124,6 @@ app.post("/api/settlement",(req,res)=>{
 app.listen(PORT,()=>{
   console.log("Saikhan POS running on http://localhost:"+PORT);
 });
+
 
 
