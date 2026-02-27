@@ -14,8 +14,6 @@ header {
   color: #fff;
   padding: 12px;
 }
-
-/* MENU GRID */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -28,69 +26,23 @@ header {
   text-align: center;
   cursor: pointer;
 }
-.card.low {
-  background: #ffcccc;
-}
-.card.out {
-  background: #e0e0e0;
-  color: #888;
-  cursor: not-allowed;
-}
-.card.out b {
-  text-decoration: line-through;
-}
-
-/* ORDER LIST */
+.card.low { background: #ffcccc; }
+.card.out { background: #e0e0e0; color: #888; cursor: not-allowed; }
+.card.out b { text-decoration: line-through; }
 .order-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  padding: 8px;
-  margin: 6px 0;
-  border-radius: 6px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: #fff; padding: 8px; margin: 6px 0; border-radius: 6px;
 }
-.order-row button {
-  padding: 2px 6px;
-  margin: 0 2px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.order-row button:hover {
-  opacity: 0.8;
-}
-
-/* TABLE BUTTONS */
-button {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-button:active {
-  transform: scale(0.97);
-}
-
-/* PRINT STYLE */
+.order-row button { padding: 2px 6px; margin: 0 2px; border: none; border-radius: 4px; cursor: pointer; }
+button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; }
+button:active { transform: scale(0.97); }
 @media print {
   @page { size: 58mm auto; margin: 0; }
   body * { visibility: hidden; }
   .print-area, .print-area * { visibility: visible; }
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 58mm;
-    font-size: 14px;
-    line-height: 1.4;
-  }
+  .print-area { position: absolute; left: 0; top: 0; width: 58mm; font-size: 14px; line-height: 1.4; }
   .print-area h3 { text-align: center; margin: 4px 0; }
-  .print-area hr {
-    border: none;
-    border-top: 1px dashed #000;
-    margin: 6px 0;
-  }
+  .print-area hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
 }
 </style>
 </head>
@@ -116,10 +68,9 @@ button:active {
 <div id="print-kitchen" class="print-area" style="left:-9999px;"></div>
 <div id="print-cash" class="print-area" style="left:-9999px;"></div>
 
-<h3>📊 Нэгтгэл хэвлэх</h3>
+<h3>📊 Өдрийн нэгтгэл</h3>
 <button onclick="settle()">Нэгтгэл хэвлэх</button>
 
 <script src="waiter.js"></script>
 </body>
 </html>
-
