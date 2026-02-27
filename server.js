@@ -6,6 +6,50 @@ const PORT = 3000;
 app.use(express.json());
 app.use(express.static("public"));
 
+app.get("/api/admin/chart",(req,res)=>{
+  const orders = readJSON(ORDERS_FILE);
+
+  let map={};
+
+  orders.forEach(o=>{
+    const hour = new Date(o.time).getHours();
+    if(!map[hour]) map[hour]=0;
+    map[hour]+=o.total;
+  });
+
+  res.json(map);
+});
+
+app.get("/api/admin/report",(req,res)=>{
+  const orders = readJSON(ORDERS_FILE);
+  const now = new Date();
+
+  let week=0, month=0;
+
+  orders.forEach(o=>{
+    const d = new Date(o.time);
+    const diffDays = (now-d)/(1000*60*60*24);
+
+    if(diffDays<=7) week+=o.total;
+    if(d.getMonth()===now.getMonth()) month+=o.total;
+  });
+
+  res.json({week,month});
+});
+
+app.get("/api/admin/export",(req,res)=>{
+  const orders = readJSON(ORDERS_FILE);
+
+  let csv="Table,Total,Time\n";
+  orders.forEach(o=>{
+    csv+=`${o.table},${o.total},${o.time}\n`;
+  });
+
+  res.setHeader("Content-Type","text/csv");
+  res.setHeader("Content-Disposition","attachment; filename=sales.csv");
+  res.send(csv);
+});
+
 // ===== FILE PATHS =====
 const DATA_FILE = "data.json";
 const STOCK_FILE = "stock.json";
@@ -137,6 +181,7 @@ app.post("/api/settlement",(req,res)=>{
 app.listen(PORT,()=>{
   console.log("Saikhan POS running on http://localhost:"+PORT);
 });
+
 
 
 
