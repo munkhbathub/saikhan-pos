@@ -116,7 +116,50 @@ async function load(){
         <button onclick="del('${x.name}')">❌</button>
       </div>`;
   });
+<h3>📦 Stock Нэмэх</h3>
+<select id="stockName"></select>
+<input type="number" id="stockQty" placeholder="тоо">
+<button onclick="addStock()">Нэмэх</button>
 
+<h3>📈 Өдрийн Борлуулалт</h3>
+<div id="todaySales"></div>
+
+<script>
+async function loadStock(){
+  const data = await fetch("/api/admin/stock").then(r=>r.json());
+  const sel = document.getElementById("stockName");
+  sel.innerHTML="";
+  data.forEach(s=>{
+    sel.innerHTML += `<option value="${s.name}">
+      ${s.name} (${s.qty})
+    </option>`;
+  });
+}
+
+async function addStock(){
+  const name = document.getElementById("stockName").value;
+  const qty = document.getElementById("stockQty").value;
+
+  await fetch("/api/admin/stock",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({name, qty})
+  });
+
+  alert("✔ Stock нэмэгдлээ");
+  loadStock();
+}
+
+async function loadToday(){
+  const d = await fetch("/api/admin/today").then(r=>r.json());
+  document.getElementById("todaySales").innerHTML =
+    `Захиалга: ${d.count} <br> Нийт: ${d.total}₮`;
+}
+
+setInterval(loadToday, 3000); // realtime 3 сек тутам
+loadStock();
+loadToday();
+</script>
   const s = await fetch("/api/admin-settlement").then(r=>r.json());
   settle.innerHTML="";
   Object.keys(s).forEach(k=>{
