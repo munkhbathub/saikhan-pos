@@ -39,23 +39,20 @@ function drawMenu(){
     const card = document.createElement("div");
     card.className = "card";
 
-    // 🔴 0 бол OUT
-    if(qty === 0){
-      card.classList.add("out");
-    }
-    // 🟡 10-аас доош бол LOW
-    else if(qty < 10){
-      card.classList.add("low");
+    let isLimited = ["Ус","Ундаа","Цай"].includes(m.cat);
+
+    if(isLimited){
+      if(qty === 0) card.classList.add("out");
+      else if(qty < 10) card.classList.add("low");
     }
 
     card.innerHTML = `
       <b>${m.name}</b><br>
       ${m.price}₮<br>
-      Үлдэгдэл: ${qty}
+      ${isLimited ? "Үлдэгдэл: "+qty : "✔ Үйлдвэрлэгдэнэ"}
     `;
 
-    // 0 биш бол л дарж болно
-    if(qty > 0){
+    if(!isLimited || qty > 0){
       card.onclick = ()=> addItem(m);
     }
 
