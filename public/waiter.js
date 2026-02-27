@@ -31,19 +31,37 @@ function drawTables(){
 function drawMenu(){
   const menuDiv = document.getElementById("menu");
   menuDiv.innerHTML="";
+
   menu.forEach(m=>{
-    const s = stock.find(x=>x.name===m.name);
-    const q = s ? s.qty : "-";
-    const outOfStock = (["Ус","Ундаа","Цай"].includes(m.cat) && q === 0);
-    const d = document.createElement("div");
-    d.className = "card" + (q !== "-" && q < 10 ? " low" : "");
-    if(outOfStock) d.classList.add("out");
-    d.innerHTML = `<b>${m.name}</b><br>${m.price}₮<br>Үлд:${q}`;
-    if(!outOfStock) d.onclick = ()=>addItem(m);
-    menuDiv.appendChild(d);
+    const s = stock.find(x=>x.name === m.name);
+    const qty = s ? s.qty : 0;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    // 🔴 0 бол OUT
+    if(qty === 0){
+      card.classList.add("out");
+    }
+    // 🟡 10-аас доош бол LOW
+    else if(qty < 10){
+      card.classList.add("low");
+    }
+
+    card.innerHTML = `
+      <b>${m.name}</b><br>
+      ${m.price}₮<br>
+      Үлдэгдэл: ${qty}
+    `;
+
+    // 0 биш бол л дарж болно
+    if(qty > 0){
+      card.onclick = ()=> addItem(m);
+    }
+
+    menuDiv.appendChild(card);
   });
 }
-
 // ===== ORDER =====
 function addItem(m){
   if(!table){ alert("Ширээ сонгоно уу"); return; }
