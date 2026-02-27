@@ -2,69 +2,34 @@
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<title>Admin</title>
+<title>Saikhan POS Admin</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body{font-family:Arial;margin:0;background:#f5f5f5}
 header{background:#2c7be5;color:#fff;padding:12px}
 button{padding:6px;margin:4px}
 .card{background:#fff;padding:8px;margin:6px;border-radius:6px}
+.card.out{background:#e0e0e0;color:#888}
 table{width:100%;border-collapse:collapse}
 td,th{border:1px solid #ccc;padding:6px}
-.card.out {
-  background: #e0e0e0;
-  color: #888;
-  cursor: not-allowed;
-}
-.card.out b {
-  text-decoration: line-through;
-}
-@media print {
-  @page {
-    size: 58mm auto;
-    margin: 0;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  .print-area, .print-area * {
-    visibility: visible;
-  }
-
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    font-family: Arial, Tahoma, sans-serif;
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  .print-area h3 {
-    text-align: center;
-    margin: 4px 0;
-    font-size: 14px;
-  }
-
-  .print-area hr {
-    border: none;
-    border-top: 1px dashed #000;
-    margin: 6px 0;
-  }
-}
-
 </style>
 </head>
 <body>
 
 <header><h2>Saikhan POS – ADMIN</h2></header>
+
+<!-- LOGIN -->
+<div id="loginBox">
+  <h3>🔐 Admin Login</h3>
+  <input id="user" placeholder="Username"><br><br>
+  <input id="pass" type="password" placeholder="Password"><br><br>
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" style="display:none; padding:15px;">
 
 <h3>➕ Menu нэмэх</h3>
 <input id="n" placeholder="Нэр">
@@ -78,35 +43,36 @@ td,th{border:1px solid #ccc;padding:6px}
 <input id="q" type="number" placeholder="Тоо (ус/цай)">
 <button onclick="add()">Нэмэх</button>
 
-<h3>✏️ Засвар</h3>
+<h3>✏️ Menu жагсаалт</h3>
 <div id="list"></div>
 
-<h3>📊 Нэгтгэл (realtime)</h3>
-<table>
-<thead><tr><th>Нэр</th><th>Тоо</th><th>Нийт</th></tr></thead>
-<tbody id="settle"></tbody>
-</table>
-  
-  <script>
-if(localStorage.getItem("role")!=="admin"){
-  location.href="login.html";
-}
-  
-<div id="loginBox">
-  <h3>🔐 Admin Login</h3>
-  <input id="user" placeholder="Username"><br><br>
-  <input id="pass" type="password" placeholder="Password"><br><br>
-  <button onclick="login()">Login</button>
-</div>
+<h3>📦 Stock Нэмэх</h3>
+<select id="stockName"></select>
+<input type="number" id="stockQty" placeholder="тоо">
+<button onclick="addStock()">Нэмэх</button>
 
-<div id="adminPanel" style="display:none;">
-  <!-- Бүх admin content энд байна -->
+<h3>📈 Өдрийн Борлуулалт (Realtime)</h3>
+<div id="todaySales"></div>
+
+<h3>📊 Цагийн Борлуулалтын График</h3>
+<canvas id="salesChart"></canvas>
+
+<h3>📅 Тайлан</h3>
+<div id="reportBox"></div>
+
+<br>
+<a href="/api/admin/export">
+<button>🧾 Excel татах</button>
+</a>
+
 </div>
 
 <script>
+
+// LOGIN
 async function login(){
-  const username=document.getElementById("user").value;
-  const password=document.getElementById("pass").value;
+  const username=user.value;
+  const password=pass.value;
 
   const res = await fetch("/api/admin/login",{
     method:"POST",
@@ -115,13 +81,15 @@ async function login(){
   }).then(r=>r.json());
 
   if(res.ok){
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("adminPanel").style.display="block";
+    loginBox.style.display="none";
+    adminPanel.style.display="block";
+    loadAll();
   } else {
     alert("Нэвтрэх мэдээлэл буруу");
   }
-</script>
-    
+}
+
+// MENU ADD
 async function add(){
   await fetch("/api/menu",{
     method:"POST",
@@ -133,57 +101,63 @@ async function add(){
       qty:+q.value||0
     })
   });
-  load();
+  loadMenu();
 }
 
-async function load(){
+// LOAD MENU
+async function loadMenu(){
   const m = await fetch("/api/menu").then(r=>r.json());
   list.innerHTML="";
   m.forEach(x=>{
     list.innerHTML+=`
-      <div class="card ${x.qty===0?'out':''}">
-        <b>${x.name}</b> – ${x.price}₮ (Үлд: ${x.qty})
+      <div class="card">
+        <b>${x.name}</b> – ${x.price}₮ (${x.cat})
         <button onclick="del('${x.name}')">❌</button>
       </div>`;
   });
-<h3>📦 Stock Нэмэх</h3>
-<select id="stockName"></select>
-<input type="number" id="stockQty" placeholder="тоо">
-<button onclick="addStock()">Нэмэх</button>
+}
 
-<h3>📈 Өдрийн Борлуулалт</h3>
-<div id="todaySales"></div>
+// DELETE MENU
+async function del(name){
+  await fetch("/api/menu/"+name,{method:"DELETE"});
+  loadMenu();
+}
 
-<script>
+// STOCK
 async function loadStock(){
   const data = await fetch("/api/admin/stock").then(r=>r.json());
-  const sel = document.getElementById("stockName");
-  sel.innerHTML="";
+  stockName.innerHTML="";
   data.forEach(s=>{
-    sel.innerHTML += `<option value="${s.name}">
-      ${s.name} (${s.qty})
-    </option>`;
+    stockName.innerHTML+=
+      `<option value="${s.name}">
+        ${s.name} (${s.qty})
+      </option>`;
   });
 }
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<canvas id="salesChart"></canvas>
-async function addStock(){
-  const name = document.getElementById("stockName").value;
-  const qty = document.getElementById("stockQty").value;
 
+async function addStock(){
   await fetch("/api/admin/stock",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({name, qty})
+    body:JSON.stringify({
+      name:stockName.value,
+      qty:stockQty.value
+    })
   });
-
   alert("✔ Stock нэмэгдлээ");
   loadStock();
 }
 
+// REALTIME TODAY
+async function loadToday(){
+  const d = await fetch("/api/admin/today").then(r=>r.json());
+  todaySales.innerHTML=
+    `Захиалга: ${d.count} <br> Нийт: ${d.total}₮`;
+}
+
+// CHART
 async function loadChart(){
   const data = await fetch("/api/admin/chart").then(r=>r.json());
-
   const labels = Object.keys(data);
   const values = Object.values(data);
 
@@ -199,55 +173,25 @@ async function loadChart(){
   });
 }
 
-loadChart();
-
-<h3>📅 Тайлан</h3>
-<div id="reportBox"></div>
-
-<script>
+// REPORT
 async function loadReport(){
   const r = await fetch("/api/admin/report").then(r=>r.json());
-  document.getElementById("reportBox").innerHTML=
+  reportBox.innerHTML=
     `7 хоног: ${r.week}₮ <br>
      Сар: ${r.month}₮`;
 }
-loadReport();
-</script>
-  
-async function loadToday(){
-  const d = await fetch("/api/admin/today").then(r=>r.json());
-  document.getElementById("todaySales").innerHTML =
-    `Захиалга: ${d.count} <br> Нийт: ${d.total}₮`;
+
+// LOAD ALL
+function loadAll(){
+  loadMenu();
+  loadStock();
+  loadToday();
+  loadChart();
+  loadReport();
+  setInterval(loadToday,3000);
 }
 
-setInterval(loadToday, 3000); // realtime 3 сек тутам
-loadStock();
-loadToday();
 </script>
-  const s = await fetch("/api/admin-settlement").then(r=>r.json());
-  settle.innerHTML="";
-  Object.keys(s).forEach(k=>{
-    settle.innerHTML+=`
-      <tr>
-        <td>${k}</td>
-        <td>${s[k].qty}</td>
-        <td>${s[k].sum}</td>
-      </tr>`;
-  });
-}
 
-async function del(name){
-  await fetch("/api/menu/"+name,{method:"DELETE"});
-  load();
-}
-
-load();
-</script>
-  <div id="print-kitchen" style="position:absolute; left:-9999px;"></div>
-<div id="print-cash" style="position:absolute; left:-9999px;"></div>
-<br><br>
-<a href="/api/admin/export">
-  <button>🧾 Excel татах</button>
-</a>
 </body>
 </html>
