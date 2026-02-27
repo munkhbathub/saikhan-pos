@@ -118,38 +118,47 @@ async function sendOrder(){
   // ======================
   // 2️⃣ PRINT ХЭСЭГ
   // ======================
-  let html = `
-    <div class="print-area">
-      <h3>Saikhan Lounge</h3>
-      <p>Ширээ: ${table}</p>
-      <p>${now.toLocaleString()}</p>
-      <hr>
+   let html = `
+  <div style="
+    width:58mm;
+    font-family: monospace;
+    font-size:12px;
+  ">
+    <center>
+      <b>SAIKHAN LOUNGE</b><br>
+      Ulaanbaatar<br>
+      ------------------------------
+    </center>
+
+    Ширээ: ${table}<br>
+    ${now.toLocaleString()}<br>
+    ------------------------------
   `;
 
   order.forEach(i=>{
     html += `
-      <p>
-        ${i.name}<br>
-        ${i.qty} x ${i.price}₮ = ${i.qty*i.price}₮
-      </p>
+      ${i.name}<br>
+      ${i.qty} x ${i.price} = ${i.qty*i.price}₮<br>
     `;
   });
 
   html += `
-      <hr>
-      <b>НИЙТ: ${totalSum}₮</b>
-      <hr>
-      <p style="text-align:center">Баярлалаа</p>
-    </div>
+    ------------------------------
+    НИЙТ: ${totalSum}₮<br>
+    ------------------------------
+    <center>
+      БАЯРЛАЛАА 🙏
+    </center>
+  </div>
   `;
 
-  const printArea = document.getElementById("print-cash");
-  printArea.innerHTML = html;
-  printArea.style.left = "0";
+  const p = document.getElementById("print-cash");
+  p.innerHTML = html;
+  p.style.left = "0";
 
   setTimeout(()=>{
     window.print();
-    printArea.style.left = "-9999px";
+    p.style.left = "-9999px";
   },100);
 
   // ======================
