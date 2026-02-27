@@ -168,7 +168,7 @@ async function sendOrder(){
   table=null;
   drawOrder();
   drawTables();
-
+await load();
   alert("✔ Захиалга хадгалагдлаа");
 }
 
