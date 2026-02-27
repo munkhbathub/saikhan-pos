@@ -42,16 +42,19 @@ app.post("/api/order",(req,res)=>{
 
   const newOrder = req.body;
 
-  // 📦 STOCK ХАСАХ
   newOrder.items.forEach(item=>{
-    const s = stock.find(x=>x.name === item.name);
-    if(s){
-      s.qty -= item.qty;
-      if(s.qty < 0) s.qty = 0;
+    const menuData = readJSON(DATA_FILE).menu;
+    const m = menuData.find(x=>x.name===item.name);
+
+    if(["Ус","Ундаа","Цай"].includes(m.cat)){
+      const s = stock.find(x=>x.name===item.name);
+      if(s){
+        s.qty -= item.qty;
+        if(s.qty < 0) s.qty = 0;
+      }
     }
   });
 
-  // хадгалах
   orders.push(newOrder);
   writeJSON(ORDERS_FILE,orders);
   writeJSON(STOCK_FILE,stock);
@@ -92,4 +95,5 @@ app.post("/api/settlement",(req,res)=>{
 app.listen(PORT,()=>{
   console.log("Saikhan POS running on http://localhost:"+PORT);
 });
+
 
