@@ -68,7 +68,29 @@ td,th{border:1px solid #ccc;padding:6px}
 </div>
 
 <script>
+<h3>📦 Stock Нэмэх</h3>
 
+<input id="stockName" placeholder="Бүтээгдэхүүн">
+<input id="stockQty" type="number" placeholder="тоо">
+
+<button onclick="addStock()">Нэмэх</button>
+
+<script>
+async function addStock(){
+
+  const name = document.getElementById("stockName").value;
+  const qty  = +document.getElementById("stockQty").value;
+
+  await fetch("/api/admin/stock",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,qty})
+  });
+
+  alert("✔ Stock нэмэгдлээ");
+
+}
+</script>
 // LOGIN
 async function login(){
   const username=user.value;
