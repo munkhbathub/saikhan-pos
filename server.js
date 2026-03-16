@@ -188,7 +188,25 @@ app.post("/api/admin/stock",(req,res)=>{
   writeJSON(STOCK_FILE,stock);
   res.json({ok:true});
 });
+app.post("/api/admin/stock",(req,res)=>{
 
+ const {name,qty} = req.body;
+
+ let stock = JSON.parse(fs.readFileSync("stock.json"));
+
+ let s = stock.find(x=>x.name===name);
+
+ if(s){
+   s.qty += qty;
+ }else{
+   stock.push({name,qty});
+ }
+
+ fs.writeFileSync("stock.json",JSON.stringify(stock,null,2));
+
+ res.json({ok:true});
+
+});
 // ===== SETTLEMENT =====
 app.post("/api/settlement",(req,res)=>{
   const orders = readJSON(ORDERS_FILE);
