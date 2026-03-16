@@ -1,220 +1,135 @@
-let menu=[], stock=[], order=[], table=null, bill=0;
+let menu = [], stock = [], order = [], table = null, bill = 0;
 const info = document.getElementById("info");
 
-// ===== LOAD DATA =====
-async function load(){
-  try {
-    menu = await fetch("/api/menu").then(r=>r.json());
-    stock = await fetch("/api/stock").then(r=>r.json());
-    drawTables();
-    drawMenu();
-    drawOrder();
-  } catch(e) {
-    alert("Menu болон stock ачаалахад алдаа гарлаа");
-  }
+// ===== LOAD MENU & STOCK =====
+async function load() {
+  menu = await fetch("/api/menu").then(r => r.json());
+  stock = await fetch("/api/stock").then(r => r.json());
+  drawTables();
+  drawMenu();
+  drawOrder();
 }
 load();
 
 // ===== TABLES =====
-function drawTables(){
+function drawTables() {
   const tables = document.getElementById("tables");
-  tables.innerHTML="";
-  ["0","1","2","3","4","5","6","7","8","9","VIP Наад","VIP Цаад","Авч явах"].forEach(t=>{
+  tables.innerHTML = "";
+  ["1","2","3","4","5","6","7","8","9","VIP1","VIP2"].forEach(t=>{
     const b = document.createElement("button");
     b.textContent = t;
-    b.onclick = ()=>{ table=t; info.innerText=`Ширээ: ${t} | Bill: ${bill+1}`; };
+    b.onclick = () => { 
+      table = t; 
+      info.innerText = `Ширээ: ${t} | Bill: ${bill+1}`; 
+    };
     tables.appendChild(b);
   });
 }
 
 // ===== MENU =====
-function drawMenu(){
+function drawMenu() {
   const menuDiv = document.getElementById("menu");
-  menuDiv.innerHTML="";
-
-  menu.forEach(m=>{
-    const s = stock.find(x=>x.name === m.name);
-    const qty = s ? s.qty : 0;
+  menuDiv.innerHTML = "";
+  menu.forEach(m => {
+    const s = stock.find(x => x.name === m.name);
+    const qty = s ? s.qty : "-";
+    const outOfStock = (["Ус","Ундаа","Цай"].includes(m.cat) && qty === 0);
 
     const card = document.createElement("div");
-    card.className = "card";
-
-    let isLimited = ["Ус","Ундаа","Цай"].includes(m.cat);
-
-    if(isLimited){
-      if(qty === 0) card.classList.add("out");
-      else if(qty < 10) card.classList.add("low");
-    }
-
-    card.innerHTML = `
-      <b>${m.name}</b><br>
-      ${m.price}₮<br>
-      ${isLimited ? "Үлдэгдэл: "+qty : "✔ Үйлдвэрлэгдэнэ"}
-    `;
-
-    if(!isLimited || qty > 0){
-      card.onclick = ()=> addItem(m);
-    }
-
+    card.className = "card" + (outOfStock ? " out" : "");
+    card.innerHTML = `<b>${m.name}</b><br>${m.price}₮<br>Үлд: ${qty}`;
+    card.onclick = () => {
+      if(outOfStock) return;
+      addToOrder(m);
+    };
     menuDiv.appendChild(card);
   });
 }
+
 // ===== ORDER =====
-function addItem(m){
-  if(!table){ alert("Ширээ сонгоно уу"); return; }
-  const s = stock.find(x=>x.name===m.name);
-  if(["Ус","Ундаа","Цай"].includes(m.cat) && s && s.qty===0){
-    alert("Үлдэгдэл дууссан тул захиалагдах боломжгүй");
-    return;
-  }
-  const i = order.find(x=>x.name===m.name);
-  i ? i.qty++ : order.push({name:m.name, price:m.price, qty:1});
-  drawOrder();
-}
-
-function drawOrder(){
-  const d = document.getElementById("order");
-  d.innerHTML="";
-  let total=0;
-  order.forEach((i,idx)=>{
-    const sum = i.price*i.qty;
-    total += sum;
-    const r = document.createElement("div");
-    r.className="order-row";
-    r.innerHTML = `
-      <div><b>${i.name}</b><br>${i.price}₮ × ${i.qty} = <b>${sum}₮</b></div>
-      <div>
-        <button onclick="chgQty(${idx},-1)">➖</button>
-        <button onclick="chgQty(${idx},1)">➕</button>
-        <button onclick="delItem(${idx})">❌</button>
-      </div>
+function drawOrder() {
+  const orderDiv = document.getElementById("order");
+  orderDiv.innerHTML = "";
+  let total = 0;
+  order.forEach((o,i) => {
+    const row = document.createElement("div");
+    row.className = "order-row";
+    row.innerHTML = `
+      ${o.name} x ${o.qty} = ${o.price*o.qty}₮
+      <button onclick="inc(${i})">+</button>
+      <button onclick="dec(${i})">-</button>
+      <button onclick="remove(${i})">❌</button>
     `;
-    d.appendChild(r);
+    orderDiv.appendChild(row);
+    total += o.price * o.qty;
   });
-  document.getElementById("total").textContent = total;
+  document.getElementById("total").innerText = total;
 }
 
-function chgQty(i,delta){
-  order[i].qty += delta;
-  if(order[i].qty<=0) order.splice(i,1);
+// ===== ORDER ACTIONS =====
+function addToOrder(item) {
+  const existing = order.find(x => x.name === item.name);
+  if(existing){
+    existing.qty++;
+  } else {
+    order.push({name:item.name, price:item.price, qty:1, cat:item.cat});
+  }
   drawOrder();
 }
 
-function delItem(i){
-  order.splice(i,1);
-  drawOrder();
+function inc(i){ order[i].qty++; drawOrder(); }
+function dec(i){ 
+  order[i].qty--; 
+  if(order[i].qty <= 0) order.splice(i,1); 
+  drawOrder(); 
 }
+function remove(i){ order.splice(i,1); drawOrder(); }
 
 // ===== SEND ORDER =====
-async function sendOrder(){
-  if(!table || order.length===0){
-    alert("Ширээ болон захиалга сонгоно уу");
-    return;
-  }
+async function sendOrder() {
+  if(!table || order.length===0){ alert("Ширээ болон захиалга сонгоно уу"); return; }
 
-  const now = new Date();
-  let totalSum = 0;
-  order.forEach(i => totalSum += i.qty * i.price);
+  const total = order.reduce((s,o)=>s+o.price*o.qty,0);
 
-  // ======================
-  // 1️⃣ SERVER-Д ХАДГАЛАХ
-  // ======================
-  await fetch("/api/order",{
+  const res = await fetch("/api/order",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({
-      table,
-      items:order,
-      total:totalSum,
-      time: now.toISOString()
+      table, items: order, total, time: new Date().toISOString()
     })
+  }).then(r=>r.json());
+
+  bill = res.bill || bill;
+
+  // ===== UPDATE STOCK =====
+  order.forEach(o=>{
+    if(["Ус","Ундаа","Цай"].includes(o.cat)){
+      const s = stock.find(x=>x.name===o.name);
+      if(s) s.qty -= o.qty;
+    }
   });
-
-  // ======================
-  // 2️⃣ PRINT ХЭСЭГ
-  // ======================
-   let html = `
-  <div style="
-    width:58mm;
-    font-family: monospace;
-    font-size:12px;
-  ">
-    <center>
-      <b>SAIKHAN LOUNGE</b><br>
-      DZ<br>
-      ------------------------------
-    </center>
-
-    Ширээ: ${table}<br>
-    ${now.toLocaleString()}<br>
-    ------------------------------
-  `;
-
-  order.forEach(i=>{
-    html += `
-      ${i.name}<br>
-      ${i.qty} x ${i.price} = ${i.qty*i.price}₮<br>
-    `;
-  });
-
-  html += `
-    ------------------------------
-    НИЙТ: ${totalSum}₮<br>
-    ------------------------------
-    <center>
-      БАЯРЛАЛАА 🙏
-    </center>
-  </div>
-  `;
-
-  const p = document.getElementById("print-cash");
-  p.innerHTML = html;
-  p.style.left = "0";
-
-  setTimeout(()=>{
-    window.print();
-    p.style.left = "-9999px";
-  },100);
-
-  // ======================
-  // 3️⃣ RESET
-  // ======================
-  order=[];
-  table=null;
+  drawMenu();
   drawOrder();
-  drawTables();
-await load();
+  order = [];
   alert("✔ Захиалга хадгалагдлаа");
 }
 
-// ===== SETTLEMENT (ӨДРИЙН НЭГТГЭЛ ХЭВЛЭХ) =====
-async function settle(){
+// ===== SETTLEMENT =====
+async function settle() {
   let data;
-  try{
+  try {
     const res = await fetch("/api/settlement",{method:"POST"});
     data = await res.json();
-  }catch(e){
-    alert("Нэгтгэл ачааллахад алдаа гарлаа");
-    return;
-  }
+  } catch(e){ alert("Нэгтгэл ачааллахад алдаа гарлаа"); return; }
 
-  if(!data || Object.keys(data).length===0){
-    alert("Нэгтгэх захиалга алга");
-    return;
-  }
+  if(!data || Object.keys(data).length===0){ alert("Нэгтгэх захиалга алга"); return; }
 
-  let html = `<div class="print-area">
-    <h3>📊 ӨДРИЙН НЭГТГЭЛ</h3><hr>`;
+  let html = `<div class="print-area"><h3>📊 ӨДРИЙН НЭГТГЭЛ</h3><hr>`;
   let total = 0;
-
   Object.keys(data).forEach(name=>{
-    html += `<p>
-      <b>${name}</b><br>
-      ${data[name].qty} ширхэг = ${data[name].sum}₮
-    </p>`;
+    html += `<p><b>${name}</b><br>${data[name].qty} ширхэг = ${data[name].sum}₮</p>`;
     total += data[name].sum;
   });
-
   html += `<hr><b>НИЙТ: ${total}₮</b></div>`;
 
   const p = document.getElementById("print-cash");
