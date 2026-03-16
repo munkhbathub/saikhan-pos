@@ -16,20 +16,21 @@ table{width:100%;border-collapse:collapse}
 td,th{border:1px solid #ccc;padding:6px}
 </style>
 </head>
+
 <body>
 
 <header><h2>Saikhan POS – ADMIN</h2></header>
 
 <!-- LOGIN -->
 <div id="loginBox">
-  <h3>🔐 Admin Login</h3>
-  <input id="user" placeholder="Username"><br><br>
-  <input id="pass" type="password" placeholder="Password"><br><br>
-  <button onclick="login()">Login</button>
+<h3>🔐 Admin Login</h3>
+<input id="user" placeholder="Username"><br><br>
+<input id="pass" type="password" placeholder="Password"><br><br>
+<button onclick="login()">Login</button>
 </div>
 
 <!-- ADMIN PANEL -->
-<div id="adminPanel" style="display:none; padding:15px;">
+<div id="adminPanel" style="display:none;padding:15px;">
 
 <h3>➕ Menu нэмэх</h3>
 <input id="n" placeholder="Нэр">
@@ -68,162 +69,164 @@ td,th{border:1px solid #ccc;padding:6px}
 </div>
 
 <script>
-<h3>📦 Stock Нэмэх</h3>
 
-<input id="stockName" placeholder="Бүтээгдэхүүн">
-<input id="stockQty" type="number" placeholder="тоо">
-
-<button onclick="addStock()">Нэмэх</button>
-
-<script>
-async function addStock(){
-
-  const name = document.getElementById("stockName").value;
-  const qty  = +document.getElementById("stockQty").value;
-
-  await fetch("/api/admin/stock",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name,qty})
-  });
-
-  alert("✔ Stock нэмэгдлээ");
-
-}
-</script>
 // LOGIN
 async function login(){
-  const username=user.value;
-  const password=pass.value;
 
-  const res = await fetch("/api/admin/login",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({username,password})
-  }).then(r=>r.json());
+const username = user.value;
+const password = pass.value;
 
-  if(res.ok){
-    loginBox.style.display="none";
-    adminPanel.style.display="block";
-    loadAll();
-  } else {
-    alert("Нэвтрэх мэдээлэл буруу");
-  }
-async function addStock(){
+const res = await fetch("/api/admin/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({username,password})
+}).then(r=>r.json());
 
- const name = document.getElementById("stockName").value;
- const qty  = +document.getElementById("stockQty").value;
-
- await fetch("/api/admin/stock",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({name,qty})
- });
-
- alert("Stock нэмэгдлээ");
+if(res.ok){
+loginBox.style.display="none";
+adminPanel.style.display="block";
+loadAll();
+}else{
+alert("Нэвтрэх мэдээлэл буруу");
+}
 
 }
 
 // MENU ADD
 async function add(){
-  await fetch("/api/menu",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      name:n.value,
-      price:+p.value,
-      cat:c.value,
-      qty:+q.value||0
-    })
-  });
-  loadMenu();
+
+await fetch("/api/menu",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+name:n.value,
+price:+p.value,
+cat:c.value,
+qty:+q.value||0
+})
+});
+
+loadMenu();
+
 }
 
 // LOAD MENU
 async function loadMenu(){
-  const m = await fetch("/api/menu").then(r=>r.json());
-  list.innerHTML="";
-  m.forEach(x=>{
-    list.innerHTML+=`
-      <div class="card">
-        <b>${x.name}</b> – ${x.price}₮ (${x.cat})
-        <button onclick="del('${x.name}')">❌</button>
-      </div>`;
-  });
+
+const m = await fetch("/api/menu").then(r=>r.json());
+
+list.innerHTML="";
+
+m.forEach(x=>{
+
+list.innerHTML+=`
+<div class="card">
+<b>${x.name}</b> – ${x.price}₮ (${x.cat})
+<button onclick="del('${x.name}')">❌</button>
+</div>`;
+
+});
+
 }
 
 // DELETE MENU
 async function del(name){
-  await fetch("/api/menu/"+name,{method:"DELETE"});
-  loadMenu();
+
+await fetch("/api/menu/"+name,{method:"DELETE"});
+
+loadMenu();
+
 }
 
-// STOCK
+// LOAD STOCK
 async function loadStock(){
-  const data = await fetch("/api/admin/stock").then(r=>r.json());
-  stockName.innerHTML="";
-  data.forEach(s=>{
-    stockName.innerHTML+=
-      `<option value="${s.name}">
-        ${s.name} (${s.qty})
-      </option>`;
-  });
+
+const data = await fetch("/api/admin/stock").then(r=>r.json());
+
+stockName.innerHTML="";
+
+data.forEach(s=>{
+
+stockName.innerHTML+=`
+<option value="${s.name}">
+${s.name} (${s.qty})
+</option>`;
+
+});
+
 }
 
+// ADD STOCK
 async function addStock(){
-  await fetch("/api/admin/stock",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      name:stockName.value,
-      qty:stockQty.value
-    })
-  });
-  alert("✔ Stock нэмэгдлээ");
-  loadStock();
+
+await fetch("/api/admin/stock",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+name:stockName.value,
+qty:+stockQty.value
+})
+});
+
+alert("✔ Stock нэмэгдлээ");
+
+loadStock();
+
 }
 
 // REALTIME TODAY
 async function loadToday(){
-  const d = await fetch("/api/admin/today").then(r=>r.json());
-  todaySales.innerHTML=
-    `Захиалга: ${d.count} <br> Нийт: ${d.total}₮`;
+
+const d = await fetch("/api/admin/today").then(r=>r.json());
+
+todaySales.innerHTML=
+`Захиалга: ${d.count} <br> Нийт: ${d.total}₮`;
+
 }
 
 // CHART
 async function loadChart(){
-  const data = await fetch("/api/admin/chart").then(r=>r.json());
-  const labels = Object.keys(data);
-  const values = Object.values(data);
 
-  new Chart(document.getElementById("salesChart"),{
-    type:"bar",
-    data:{
-      labels:labels,
-      datasets:[{
-        label:"Борлуулалт ₮",
-        data:values
-      }]
-    }
-  });
+const data = await fetch("/api/admin/chart").then(r=>r.json());
+
+const labels = Object.keys(data);
+const values = Object.values(data);
+
+new Chart(document.getElementById("salesChart"),{
+type:"bar",
+data:{
+labels:labels,
+datasets:[{
+label:"Борлуулалт ₮",
+data:values
+}]
+}
+});
+
 }
 
 // REPORT
 async function loadReport(){
-  const r = await fetch("/api/admin/report").then(r=>r.json());
-  reportBox.innerHTML=
-    `7 хоног: ${r.week}₮ <br>
-     Сар: ${r.month}₮`;
+
+const r = await fetch("/api/admin/report").then(r=>r.json());
+
+reportBox.innerHTML=
+`7 хоног: ${r.week}₮ <br>
+Сар: ${r.month}₮`;
+
 }
 
 // LOAD ALL
 function loadAll(){
-  loadMenu();
-  loadStock();
-  loadToday();
-  loadChart();
-  loadReport();
-  setInterval(loadToday,3000);
+
+loadMenu();
+loadStock();
+loadToday();
+loadChart();
+loadReport();
+
+setInterval(loadToday,3000);
+
 }
 
 </script>
