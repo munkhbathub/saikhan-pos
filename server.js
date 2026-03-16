@@ -204,7 +204,6 @@ app.post("/api/settlement",(req,res)=>{
       summary[i.name].qty += i.qty;
       summary[i.name].sum += i.qty * i.price;
     });
-  });
 
   // settlements.json хадгалах
   const old = readJSON(SETTLE_FILE);
@@ -223,7 +222,32 @@ app.post("/api/settlement",(req,res)=>{
 app.listen(PORT,()=>{
   console.log("Saikhan POS running on http://localhost:"+PORT);
 });
+app.post("/api/order",(req,res)=>{
 
+ const order = req.body.items;
+
+ let stock = JSON.parse(fs.readFileSync("stock.json"));
+
+ order.forEach(o=>{
+
+   if(["Ус","Ундаа","Цай"].includes(o.cat)){
+
+     const s = stock.find(x=>x.name===o.name);
+
+     if(s){
+       s.qty -= o.qty;
+       if(s.qty < 0) s.qty = 0;
+     }
+
+   }
+
+ });
+
+ fs.writeFileSync("stock.json",JSON.stringify(stock,null,2));
+
+ res.json({ok:true});
+
+});
 
 
 
