@@ -19,6 +19,42 @@ app.get("/api/admin/chart",(req,res)=>{
 
   res.json(map);
 });
+// ===== EXPORT BORLUULALT EXCEL =====
+const XLSX = require("xlsx");
+const path = require("path");
+const fs = require("fs");
+
+app.get("/api/admin/export", (req, res) => {
+  // settlements.json унших
+  const settlements = fs.existsSync(SETTLEMENT_FILE) 
+      ? JSON.parse(fs.readFileSync(SETTLEMENT_FILE, "utf8"))
+      : [];
+
+  // Excel-д хийх мэдээллийг бүрдүүлэх
+  const rows = [];
+  settlements.forEach(day => {
+    Object.keys(day.items).forEach(name => {
+      rows.push({
+        Огноо: day.date,
+        Бүтээгдэхүүн: name,
+        Тоо: day.items[name].qty,
+        Дүн: day.items[name].sum
+      });
+    });
+  });
+
+  // Excel workbook үүсгэх
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, "Борлуулалт");
+
+  // Файлыг сервер дээр хадгалах
+  const filePath = path.join(__dirname, "settlements.xlsx");
+  XLSX.writeFile(wb, filePath);
+
+  // Файлыг татах боломж олгох
+  res.download(filePath, "Saikhan_POS_Borluulalt.xlsx");
+});
 
 app.get("/api/admin/report",(req,res)=>{
   const orders = readJSON(ORDERS_FILE);
