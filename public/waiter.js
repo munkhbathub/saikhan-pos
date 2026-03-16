@@ -43,6 +43,40 @@ function drawMenu() {
       addToOrder(m);
     };
     menuDiv.appendChild(card);
+    function drawMenu(){
+  const menuDiv = document.getElementById("menu");
+  menuDiv.innerHTML="";
+
+  menu.forEach(m=>{
+
+    const s = stock.find(x=>x.name===m.name);
+    const qty = s ? s.qty : 0;
+
+    let cls = "card";
+
+    if(qty === 0){
+      cls += " out";
+    }else if(qty <= 10){
+      cls += " low";
+    }
+
+    const d = document.createElement("div");
+    d.className = cls;
+
+    d.innerHTML = `
+      <b>${m.name}</b><br>
+      ${m.price}₮<br>
+      Үлд: ${qty}
+    `;
+
+    if(qty > 0){
+      d.onclick = ()=> addToOrder(m);
+    }
+
+    menuDiv.appendChild(d);
+
+  });
+}
   });
 }
 
