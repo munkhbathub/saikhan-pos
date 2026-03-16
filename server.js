@@ -86,6 +86,12 @@ app.get("/api/admin/export",(req,res)=>{
   res.send(csv);
 });
 
+const fs = require("fs");
+
+function saveStock(stock){
+  fs.writeFileSync("stock.json", JSON.stringify(stock,null,2));
+}
+
 // ===== FILE PATHS =====
 const DATA_FILE = "data.json";
 const STOCK_FILE = "stock.json";
