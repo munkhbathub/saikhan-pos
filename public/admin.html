@@ -87,6 +87,19 @@ async function login(){
   } else {
     alert("Нэвтрэх мэдээлэл буруу");
   }
+async function addStock(){
+
+ const name = document.getElementById("stockName").value;
+ const qty  = +document.getElementById("stockQty").value;
+
+ await fetch("/api/admin/stock",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({name,qty})
+ });
+
+ alert("Stock нэмэгдлээ");
+
 }
 
 // MENU ADD
